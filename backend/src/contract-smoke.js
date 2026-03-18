@@ -47,6 +47,38 @@ async function main() {
     };
   }
 
+  async function assertSeededResource(resource, token) {
+    const list = await request(`/api/${resource}?limit=2`, { token });
+    assert.equal(
+      list.response.status,
+      200,
+      `${resource} list should succeed for seeded data`
+    );
+    assert.ok(
+      Array.isArray(list.payload.data),
+      `${resource} list should return a data array`
+    );
+    assert.ok(
+      list.payload.data.length > 0,
+      `${resource} should have at least one seeded row`
+    );
+
+    const seededRecordId = list.payload.data[0]?.id;
+    assert.ok(seededRecordId, `${resource} seeded row should expose an id`);
+
+    const show = await request(`/api/${resource}/${seededRecordId}`, { token });
+    assert.equal(
+      show.response.status,
+      200,
+      `${resource} show should succeed for seeded data`
+    );
+    assert.equal(
+      show.payload.data.id,
+      seededRecordId,
+      `${resource} show should return the requested seeded row`
+    );
+  }
+
   try {
     const login = await request("/api/auth/login", {
       method: "POST",
@@ -77,6 +109,42 @@ async function main() {
       "seeded passwords should be scrypt hashed"
     );
 
+    const seededResources = [
+      "users",
+      "roles",
+      "permissions",
+      "profiles",
+      "companies",
+      "directorats",
+      "personel_areas",
+      "personel_sub_areas",
+      "plant_areas",
+      "organizations",
+      "departments",
+      "organization_functions",
+      "positions",
+      "competencies",
+      "competency_levels",
+      "trainings",
+      "requirement_scores",
+      "assessment_schedules",
+      "assessments",
+      "assessment_records",
+      "periodical_general_assessments",
+      "employments",
+      "certifications",
+      "bucket_categories",
+      "publication_categories",
+      "buckets",
+      "publications",
+      "publication_storages",
+      "employees",
+    ];
+
+    for (const resource of seededResources) {
+      await assertSeededResource(resource, token);
+    }
+
     const unauthorizedUserShow = await request("/api/users/1");
     assert.equal(
       unauthorizedUserShow.response.status,
@@ -91,6 +159,18 @@ async function main() {
       publicEmploymentLookup.response.status,
       200,
       "public employment lookup should remain accessible"
+    );
+    assert.ok(
+      publicEmploymentLookup.payload.data.length > 0,
+      "public employment lookup should expose seeded employments"
+    );
+    const publicEmploymentShow = await request(
+      `/api/employments_autocomplete_options/${publicEmploymentLookup.payload.data[0].employment_id}`
+    );
+    assert.equal(
+      publicEmploymentShow.response.status,
+      200,
+      "public employment lookup detail should succeed for seeded data"
     );
 
     const invalidLoginPayload = await request("/api/auth/login", {
@@ -653,6 +733,12 @@ async function main() {
       publicationStorageShow.payload.data.document_url,
       /^mock-publications\//
     );
+    assert.equal(
+      publicationStorageShow.payload.data.document_type,
+      "application/pdf"
+    );
+    assert.ok(publicationStorageShow.payload.data.document_storage_path);
+    assert.ok(publicationStorageShow.payload.data.document_description);
 
     const duplicatePublication = await request("/api/publications", {
       method: "POST",
@@ -796,7 +882,10 @@ async function main() {
       200,
       "certification list should succeed"
     );
-    assert.equal(certificationList.payload.data.length, 0);
+    assert.ok(
+      certificationList.payload.data.length > 0,
+      "certification list should expose seeded certifications"
+    );
 
     const createdCertification = await request("/api/certifications", {
       method: "POST",
@@ -998,9 +1087,9 @@ async function main() {
       token,
       body: {
         minimum_score: "5",
-        position_id: "4",
-        competency_id: "4",
-        competency_level_id: "3",
+        position_id: "5",
+        competency_id: "1",
+        competency_level_id: "2",
       },
     });
     assert.equal(
@@ -1011,11 +1100,11 @@ async function main() {
     assert.equal(createdRequirementScore.payload.data.minimum_score, 5);
     assert.equal(
       createdRequirementScore.payload.data.position.position_name,
-      "HR Business Partner"
+      "Learning & Development Officer"
     );
     assert.equal(
       createdRequirementScore.payload.data.level.competency_level_title,
-      "L3"
+      "L2"
     );
 
     const duplicateRequirementScore = await request("/api/requirement_scores", {
@@ -1023,8 +1112,8 @@ async function main() {
       token,
       body: {
         minimum_score: "4",
-        position_id: "4",
-        competency_id: "4",
+        position_id: "5",
+        competency_id: "1",
         competency_level_id: "3",
       },
     });

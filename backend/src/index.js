@@ -853,6 +853,11 @@ app.post("/api/utilities/uploads/libraries", uploadLimiter, async (req, res) => 
         name: path.basename(primaryFile.fileName, path.extname(primaryFile.fileName)),
         extension,
         path: "mock-publications",
+        storagePath: `mock-publications/${fileName}`,
+        type: primaryFile.contentType || "application/pdf",
+        description:
+          payload.publication_description ||
+          `Uploaded document ${path.basename(primaryFile.fileName)}`,
         sizeLabel: formatFileSize(primaryFile.buffer.length),
       };
     }

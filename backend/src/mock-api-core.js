@@ -1249,16 +1249,23 @@ function publicationStorageSummary(store, storage, options = {}) {
     storage.document_path && fileName
       ? `${storage.document_path}/${fileName}`
       : null;
+  const documentType =
+    storage.document_type ||
+    (storage.document_extension === "pdf" ? "application/pdf" : null);
 
   return {
     id: storage.id,
     publication_id: storage.publication_id,
     document_extension: storage.document_extension,
+    document_type: documentType,
     document_name: storage.document_name,
     document_hash_name: storage.document_hash_name,
     document_path: storage.document_path,
+    document_storage_path:
+      storage.document_storage_path || documentUrl,
     document_size: storage.document_size,
     document_uuid: storage.document_uuid,
+    document_description: storage.document_description ?? null,
     storageable_id: storage.storageable_id,
     storageable_type: storage.storageable_type,
     document_url: documentUrl,
@@ -1297,6 +1304,13 @@ function createPublicationRecord(store, payload = {}) {
   const documentExtension = document.extension || "pdf";
   const documentPath = document.path || "mock-publications";
   const documentSize = document.sizeLabel || "128 KB";
+  const documentStoragePath =
+    document.storagePath || `${documentPath}/${documentHashName}.${documentExtension}`;
+  const documentType = document.type || "application/pdf";
+  const documentDescription =
+    document.description ||
+    payload.publication_description ||
+    `Seeded document for ${title}`;
 
   const publication = {
     id: publicationId,
@@ -1319,6 +1333,9 @@ function createPublicationRecord(store, payload = {}) {
     document_name: documentName,
     document_hash_name: documentHashName,
     document_path: documentPath,
+    document_storage_path: documentStoragePath,
+    document_type: documentType,
+    document_description: documentDescription,
     document_size: documentSize,
     document_uuid: document.uuid || crypto.randomUUID(),
     storageable_id: publicationId,
