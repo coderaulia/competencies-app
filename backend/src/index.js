@@ -32,6 +32,9 @@ const {
   getRoleNamesForUser,
   getPermissionNamesForUser,
   getGravatarUrl,
+  listEmployees,
+  searchEmployees,
+  showEmployee,
   getSelectOptions,
   getDashboardEmploymentStats,
   getDashboardExportBuffer,
@@ -559,6 +562,25 @@ app.get("/api/auth/user", requireAuth, (req, res) => {
 
 app.get("/api/gravatar/:id", (req, res) => {
   return res.json(getGravatarUrl(store, req.params.id));
+});
+
+app.get("/api/employees", (req, res) => {
+  return res.json(listEmployees(store, req.query));
+});
+
+app.post("/api/employees/search", (req, res) => {
+  return res.json(searchEmployees(store, req.query, req.body || {}));
+});
+
+app.get("/api/employees/:id", (req, res) => {
+  const payload = showEmployee(store, req.params.id);
+  if (!payload) {
+    return respondNotFound(res, "Employee was not found");
+  }
+
+  return res.json({
+    data: payload,
+  });
 });
 
 app.get("/api/employments_autocomplete_options", (req, res) => {

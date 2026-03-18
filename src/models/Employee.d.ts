@@ -1,0 +1,42 @@
+import type { EmploymentResource } from "./Employment";
+import type { ProfileResource } from "./Profile";
+import type { UserResource } from "./User";
+
+export declare type EmployeeResource = {
+  id: string | number;
+  employee_id: string | number;
+  employment_id: string | number | null;
+  profile_id: string | number | null;
+  user_id: string | number | null;
+  name: string | null;
+  email: string | null;
+  profile_fullname: string | null;
+  profile_gender: string | null;
+  employment_status: string | null;
+  employment_position_status: string | null;
+  employment_group_type_name: string | null;
+  employment_wsr: string | null;
+  position_id: string | number | null;
+  position_name: string | null;
+  company_id: string | number | null;
+  company_name: string | null;
+  directorat_id: string | number | null;
+  directorat_name: string | null;
+  organization_id: string | number | null;
+  organization_name: string | null;
+  department_id: string | number | null;
+  department_name: string | null;
+  organization_function_id: string | number | null;
+  organization_function_name: string | null;
+  parent_employment_id: string | number | null;
+  parent_profile_fullname: string | null;
+  role_names: string[];
+  permission_names: string[];
+  user: UserResource | null;
+  profile: ProfileResource | null;
+  employment: EmploymentResource | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export declare type EmployeeCollections = EmployeeResource[];

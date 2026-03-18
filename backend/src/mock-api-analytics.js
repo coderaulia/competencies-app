@@ -398,16 +398,19 @@ function getDepartmentDetail(store, directoratId, showParticipation) {
 function listEmploymentAutocompleteOptions(store) {
   return {
     data: store.collections.employments.map((employment) => {
-      const hydrated = core.employmentSummary(store, employment, {
-        includeHierarchy: false,
-        includeAssessments: false,
+      const employee = core.employeeSummary(store, employment, {
+        includeNested: false,
+        employmentOptions: {
+          includeHierarchy: false,
+          includeAssessments: false,
+        },
       });
 
       return {
-        employment_id: hydrated.id,
-        profile_fullname: hydrated.profile?.profile_fullname,
-        position_name: hydrated.position?.position_name,
-        parent_profile_fullname: hydrated.parent?.profile?.profile_fullname || null,
+        employment_id: employee.employment_id,
+        profile_fullname: employee.profile_fullname,
+        position_name: employee.position_name,
+        parent_profile_fullname: employee.parent_profile_fullname,
       };
     }),
   };

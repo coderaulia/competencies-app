@@ -426,6 +426,85 @@ async function main() {
       "Frontend Delivery"
     );
 
+    const employeeList = await request("/api/employees?limit=10", { token });
+    assert.equal(
+      employeeList.response.status,
+      200,
+      "employee aggregate list should succeed"
+    );
+    assert.ok(
+      employeeList.payload.data.some(
+        (employee) =>
+          employee.employment_id === createdEmployment.payload.data.id &&
+          employee.profile_fullname === "Contract User"
+      )
+    );
+
+    const employeeSearch = await request("/api/employees/search?limit=10", {
+      method: "POST",
+      token,
+      body: {
+        search: {
+          value: "Contract User",
+        },
+      },
+    });
+    assert.equal(
+      employeeSearch.response.status,
+      200,
+      "employee aggregate search should succeed"
+    );
+    assert.equal(employeeSearch.payload.data.length, 1);
+    assert.equal(
+      employeeSearch.payload.data[0].employment_id,
+      createdEmployment.payload.data.id
+    );
+    assert.equal(
+      employeeSearch.payload.data[0].department_name,
+      "Frontend Platform"
+    );
+
+    const employeeShow = await request(
+      `/api/employees/${createdEmployment.payload.data.id}`,
+      { token }
+    );
+    assert.equal(
+      employeeShow.response.status,
+      200,
+      "employee aggregate show should succeed"
+    );
+    assert.equal(employeeShow.payload.data.user_id, createdUser.payload.data.id);
+    assert.equal(
+      employeeShow.payload.data.profile.profile_fullname,
+      "Contract User"
+    );
+    assert.equal(
+      employeeShow.payload.data.employment.position.position_name,
+      "Frontend Engineer"
+    );
+    assert.equal(
+      employeeShow.payload.data.role_names[0],
+      "manager"
+    );
+
+    const employeeOptions = await request("/api/utilities/select_options/employees", {
+      token,
+    });
+    assert.equal(
+      employeeOptions.response.status,
+      200,
+      "employee select options should succeed"
+    );
+    assert.ok(
+      employeeOptions.payload.data.some(
+        (employee) =>
+          employee.employment_id === createdEmployment.payload.data.id &&
+          employee.user === null &&
+          employee.profile === null &&
+          employee.employment === null
+      )
+    );
+
     const publicationUploadForm = new FormData();
     publicationUploadForm.set("publication_title", "Persistent Upload");
     publicationUploadForm.set(
@@ -959,6 +1038,16 @@ async function main() {
       missingEmployment.response.status,
       404,
       "linked employment should be deleted with the user"
+    );
+
+    const missingEmployeeAggregate = await request(
+      `/api/employees/${createdEmployment.payload.data.id}`,
+      { token }
+    );
+    assert.equal(
+      missingEmployeeAggregate.response.status,
+      404,
+      "employee aggregate should disappear when the employment is deleted"
     );
 
     const missingAssessmentAfterEmploymentDelete = await request(

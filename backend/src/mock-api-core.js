@@ -109,6 +109,31 @@ function findById(store, collectionName, id) {
   );
 }
 
+function findProfileForUser(store, userId) {
+  return (
+    store.collections.profiles.find(
+      (profile) => Number(profile.user_id) === Number(userId)
+    ) || null
+  );
+}
+
+function findUserForProfile(store, profileId) {
+  const profile = findById(store, "profiles", profileId);
+  if (!profile) {
+    return null;
+  }
+
+  return findById(store, "users", profile.user_id);
+}
+
+function findEmploymentForProfile(store, profileId) {
+  return (
+    store.collections.employments.find(
+      (employment) => Number(employment.profile_id) === Number(profileId)
+    ) || null
+  );
+}
+
 function timestamps(record) {
   return {
     created_at: record.created_at || nowIso(),
@@ -710,9 +735,7 @@ function profileSummary(store, profile, options = {}) {
     employment: includeEmployment
       ? employmentSummary(
           store,
-          store.collections.employments.find(
-            (employment) => Number(employment.profile_id) === Number(profile.id)
-          ),
+          findEmploymentForProfile(store, profile.id),
           {
             includeProfile: false,
           }
@@ -1100,6 +1123,72 @@ function employmentSummary(store, employment, options = {}) {
   };
 }
 
+function employeeSummary(store, employment, options = {}) {
+  if (!employment) {
+    return null;
+  }
+
+  const includeNested = options.includeNested !== false;
+  const employmentOptions = options.employmentOptions || {};
+  const profile = findById(store, "profiles", employment.profile_id);
+  const user = profile ? findUserForProfile(store, profile.id) : null;
+  const userResource = user
+    ? userSummary(store, user, {
+        includeProfile: false,
+      })
+    : null;
+  const profileResource = profile
+    ? profileSummary(store, profile, {
+        includeUser: false,
+        includeEmployment: false,
+      })
+    : null;
+  const employmentResource = employmentSummary(store, employment, {
+    includeProfile: false,
+    ...employmentOptions,
+  });
+
+  return {
+    id: employment.id,
+    employee_id: employment.id,
+    employment_id: employment.id,
+    profile_id: profile?.id ?? null,
+    user_id: user?.id ?? null,
+    name: user?.name ?? profile?.profile_fullname ?? null,
+    email: user?.email ?? null,
+    profile_fullname: profile?.profile_fullname ?? null,
+    profile_gender: profile?.profile_gender ?? null,
+    employment_status: employment.employment_status ?? null,
+    employment_position_status: employment.employment_position_status ?? null,
+    employment_group_type_name: employment.employment_group_type_name ?? null,
+    employment_wsr: employment.employment_wsr ?? null,
+    position_id: employment.position_id ?? null,
+    position_name: employmentResource?.position?.position_name ?? null,
+    company_id: employment.company_id ?? null,
+    company_name: employmentResource?.company?.company_name ?? null,
+    directorat_id: employment.directorat_id ?? null,
+    directorat_name: employmentResource?.directorat?.directorat_name ?? null,
+    organization_id: employment.organization_id ?? null,
+    organization_name: employmentResource?.organization?.organization_name ?? null,
+    department_id: employment.department_id ?? null,
+    department_name: employmentResource?.department?.department_name ?? null,
+    organization_function_id: employment.organization_function_id ?? null,
+    organization_function_name:
+      employmentResource?.organization_function?.organization_function_name ?? null,
+    parent_employment_id: employment.parent_employment_id ?? null,
+    parent_profile_fullname:
+      employmentResource?.parent?.profile?.profile_fullname ?? null,
+    role_names: userResource ? userResource.roles.map((role) => role.name) : [],
+    permission_names: userResource
+      ? userResource.permissions.map((permission) => permission.name)
+      : [],
+    user: includeNested ? userResource : null,
+    profile: includeNested ? profileResource : null,
+    employment: includeNested ? employmentResource : null,
+    ...timestamps(employment),
+  };
+}
+
 function bucketSummary(store, bucket, options = {}) {
   if (!bucket) {
     return null;
@@ -1438,6 +1527,54 @@ function showResource(store, resource, id) {
   }
 
   return hydrateResource(store, resource, record);
+}
+
+function listEmployees(store, query = {}) {
+  const employees = store.collections.employments
+    .slice()
+    .sort((left, right) => Number(left.id) - Number(right.id))
+    .map((employment) =>
+      employeeSummary(store, employment, {
+        employmentOptions: {
+          includeHierarchy: false,
+          includeAssessments: false,
+        },
+      })
+    );
+
+  return paginate(employees, query);
+}
+
+function searchEmployees(store, query = {}, body = {}) {
+  const keyword = body?.search?.value || "";
+  const employees = store.collections.employments
+    .slice()
+    .sort((left, right) => Number(left.id) - Number(right.id))
+    .map((employment) =>
+      employeeSummary(store, employment, {
+        employmentOptions: {
+          includeHierarchy: false,
+          includeAssessments: false,
+        },
+      })
+    )
+    .filter((employee) => matchesSearch(employee, keyword));
+
+  return paginate(employees, query);
+}
+
+function showEmployee(store, id) {
+  const employment = findById(store, "employments", id);
+  if (!employment) {
+    return null;
+  }
+
+  return employeeSummary(store, employment, {
+    employmentOptions: {
+      includeHierarchy: true,
+      includeAssessments: true,
+    },
+  });
 }
 
 function mutateRecord(record, payload = {}) {
@@ -2144,6 +2281,18 @@ function getSelectOptions(store, key) {
           assessmentScheduleSummary(item)
         ),
       };
+    case "employees":
+      return {
+        data: store.collections.employments.map((employment) =>
+          employeeSummary(store, employment, {
+            includeNested: false,
+            employmentOptions: {
+              includeHierarchy: false,
+              includeAssessments: false,
+            },
+          })
+        ),
+      };
     case "publication_categories":
       return {
         data: store.collections.publication_categories.map((item) =>
@@ -2188,4 +2337,8 @@ module.exports = {
   getPermissionNamesForUser,
   getGravatarUrl,
   getSelectOptions,
+  employeeSummary,
+  listEmployees,
+  searchEmployees,
+  showEmployee,
 };
