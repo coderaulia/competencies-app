@@ -89,14 +89,12 @@ export default defineComponent({
             paginationMeta[key] = val;
           }
         }
-        console.log(paginationMeta);
         setPaginationMeta(paginationMeta as PaginationMeta);
         loadingStop();
       }
       // @ts-ignore
       if (statusCode.value > 300 && statusCode.value <= 500) {
         loadingStop();
-        console.log(error.value);
       }
     };
 

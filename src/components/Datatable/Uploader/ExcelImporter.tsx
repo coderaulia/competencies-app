@@ -47,15 +47,9 @@ export default defineComponent({
       },
     });
 
-    const onStarted = () => {
-      console.log("Event started hooks fired");
-    };
-    const onUpdated = () => {
-      // console.log("Event hooks")
-    };
-    const onFinished = () => {
-      console.log("Event finished hooks fired");
-    };
+    const onStarted = () => undefined;
+    const onUpdated = () => undefined;
+    const onFinished = () => undefined;
 
     const isDisabled_ = computed({
       get: () => disableImport.value,
@@ -64,12 +58,7 @@ export default defineComponent({
         emit("update:disableImport", value);
       },
     });
-    watch(
-      () => path.value,
-      (n, o) => {
-        console.log({ n, o });
-      }
-    );
+    watch(() => path.value, () => undefined);
 
     const { state } = useUploadManager(onStarted, onFinished, onUpdated);
 
@@ -84,12 +73,7 @@ export default defineComponent({
         config.action.resource
     );
 
-    watch(
-      () => uploadHandler.value,
-      (n, o) => {
-        console.log("handler :", { n, o });
-      }
-    );
+    watch(() => uploadHandler.value, () => undefined);
 
     // const handler = reactive({
     //   endpoint: import.meta.env.VITE_BACKEND_BASE_URL + config.action.path + config.action.resource

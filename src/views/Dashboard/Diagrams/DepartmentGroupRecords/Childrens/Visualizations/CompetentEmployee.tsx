@@ -234,12 +234,6 @@ export default defineComponent({
         ];
         // @ts-ignore
         config.value = { ...configs };
-        console.log({
-          categories,
-          xAxis,
-          configs,
-          yAxis,
-        });
       }
     };
 

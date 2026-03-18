@@ -674,7 +674,6 @@ export const RenderActionModal = defineComponent({
     };
 
     const handleChangeParentClosed = () => {
-      console.log(formChangeParent);
       // @ts-ignore
       selectedOption_.value = computedEmploymentProps.value?.parent?.id;
     };

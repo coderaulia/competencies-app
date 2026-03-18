@@ -36,7 +36,8 @@ const InitialAuthState: AuthState = {
 
 export const useAuthStore = defineStore("useAuthStore", {
   persist: {
-    paths: ["authorization.access_token", "user", "roles", "permissions"], // just persist the state of authorization in local storage to prevent hacked !
+    storage: sessionStorage,
+    paths: ["authorization.access_token", "user", "roles", "permissions"],
   },
   state: (): AuthState => ({
     ...InitialAuthState,

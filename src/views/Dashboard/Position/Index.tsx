@@ -243,7 +243,6 @@ export default defineComponent({
         newVal.forEach((e) => {
           if (e.isActive === true) {
             performFilter(customPath.value as string);
-            console.log(customPath.value);
           }
         });
       },
@@ -251,12 +250,10 @@ export default defineComponent({
     );
 
     const onSearchPageChangeHandler = (page: number) => {
-      console.log({ page }, customPath.value);
       customPath.value = customPath.value + `&page=${page}`;
       performFilter(customPath.value as string);
     };
     const onSearchPageSizeChangeHandler = (pageSize: number) => {
-      console.log({ pageSize }, customPath.value);
       // customPath =
     };
 

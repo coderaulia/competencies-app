@@ -2,6 +2,7 @@
 
 const crypto = require("node:crypto");
 const { createSeedState } = require("./data");
+const { hashPassword } = require("./security");
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -1706,7 +1707,7 @@ function createGenericRecord(store, resource, payload = {}) {
       id: userId,
       name,
       email: payload.email || `user${userId}@example.com`,
-      password: payload.password || "password",
+      password: hashPassword(payload.password || "password"),
       email_verified_at: null,
       role_ids: roleIds.length > 0 ? roleIds : employeeRole ? [employeeRole.id] : [],
       permission_ids: permissionIds,
@@ -1853,7 +1854,12 @@ function updateGenericRecord(store, resource, id, payload = {}) {
     mutateRecord(record, {
       name: payload.name ?? record.name,
       email: payload.email ?? record.email,
-      password: payload.password ?? record.password,
+      password:
+        Object.prototype.hasOwnProperty.call(payload, "password") &&
+        payload.password !== null &&
+        payload.password !== ""
+          ? hashPassword(payload.password)
+          : record.password,
       role_ids:
         Object.prototype.hasOwnProperty.call(payload, "role_ids")
           ? normalizeIdList(payload.role_ids)

@@ -101,8 +101,6 @@ export default defineComponent({
     } = useFormModalProcessor(backend.value);
 
     const formActionHandler = async () => {
-      if (formAction.method === "POST")
-        console.log(formData.employmentHiringDate);
       await processPostRequest(
         {
           employment_hiring_date:
@@ -188,14 +186,8 @@ export default defineComponent({
         } else {
           uploadActionDisabled.value = false;
         }
-
-        console.log(uploadActionDisabled.value, n, uploadActionPath.value);
       }
     );
-
-    onMounted(() => {
-      console.log(uploadEmploymentComponentRefs.value);
-    });
 
     watchDebounced(
       () => uploadEmploymentComponentRefs.value?.state.currentRowIndex,
@@ -259,9 +251,6 @@ export default defineComponent({
             setupPostAction();
           }}
         />
-
-        {JSON.stringify(this.uploadActionPath, null, 4)}
-
         <DatatableServerSide
           v-slots={{
             importer: () => (

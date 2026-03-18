@@ -140,10 +140,6 @@ export default defineComponent({
           path={backend}
           columns={columns}
           onTriggerUpdate={(id) => {
-            console.log({
-              resource: backend,
-              id: id,
-            });
             (async () => {
               const { data, isFinished, statusCode } = await useApiService(
                 `/${backend}/${id}`

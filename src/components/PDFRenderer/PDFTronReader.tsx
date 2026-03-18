@@ -29,6 +29,9 @@ export default defineComponent({
   setup(props) {
     const PDFReaderRefs = ref<HTMLElement | null>(null);
     const documentPath = toRef(props, "path");
+    const viewerLicenseKey = String(
+      import.meta.env.VITE_WEBVIEWER_LICENSE_KEY ?? ""
+    ).trim();
 
     const mountViewer = async (nextPath: string) => {
       if (!PDFReaderRefs.value) {
@@ -40,18 +43,19 @@ export default defineComponent({
         return;
       }
 
-      PDFReaderRefs.value.innerHTML = "";
+      PDFReaderRefs.value.replaceChildren();
 
-      const instance = await WebViewer(
-        {
-          path: "/webviewer",
-          licenseKey:
-            "demo:1691871296609:7c54bbfd030000000080ad064b9772e2a5cedc0c3abb0320b2bd2eaaf7",
-          initialDoc: documentUrl,
-          extension: "pdf",
-        },
-        PDFReaderRefs.value
-      );
+      const viewerOptions: Record<string, string> = {
+        path: "/webviewer",
+        initialDoc: documentUrl,
+        extension: "pdf",
+      };
+
+      if (viewerLicenseKey) {
+        viewerOptions.licenseKey = viewerLicenseKey;
+      }
+
+      const instance = await WebViewer(viewerOptions, PDFReaderRefs.value);
 
       instance.UI.setTheme("dark");
     };

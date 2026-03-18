@@ -25,7 +25,7 @@ const useApiService = createFetch({
       ].map((el) => env + el);
       const securedApiEndpoint = !publicApiEndpoint.includes(url);
 
-      if (securedApiEndpoint) {
+      if (securedApiEndpoint && token) {
         options.headers = {
           ...options.headers,
           Authorization: `Bearer ${token}`,
@@ -38,6 +38,7 @@ const useApiService = createFetch({
     },
   },
   fetchOptions: {
+    credentials: "omit",
     mode: "cors",
   },
 });

@@ -3,11 +3,13 @@ const cors = require("cors");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { demoPassword, tokens } = require("./data");
+const { tokens } = require("./data");
 const { createMockPdfBuffer } = require("./mock-pdf");
 const { parseMultipartForm, sanitizeFileStem, formatFileSize, saveUploadedFile } = require("./multipart");
 const { createPersistentStore } = require("./store-persistence");
 const { isApiError } = require("./api-errors");
+const { createRateLimiter } = require("./rate-limit");
+const { hashPassword, hashResetToken, verifyPassword } = require("./security");
 const {
   validateLoginPayload,
   validateAuthRegisterPayload,
@@ -72,15 +74,68 @@ const IMPORT_STORAGE_DIRECTORY = path.join(
   "storage",
   "imports"
 );
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+];
+const allowedOrigins = new Set(
+  String(process.env.BACKEND_ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(","))
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+const authLoginLimiter = createRateLimiter({
+  prefix: "auth-login",
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+});
+const authRegisterLimiter = createRateLimiter({
+  prefix: "auth-register",
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+});
+const authResetRequestLimiter = createRateLimiter({
+  prefix: "auth-reset-request",
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+});
+const authResetLimiter = createRateLimiter({
+  prefix: "auth-reset",
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+});
+const uploadLimiter = createRateLimiter({
+  prefix: "uploads",
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+});
 
 app.use(
   cors({
-    origin: true,
-    credentials: true,
+    origin(origin, callback) {
+      callback(null, !origin || allowedOrigins.has(origin));
+    },
+    credentials: false,
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+
+  if (req.path.startsWith("/api/auth")) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+
+  next();
+});
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 function persistStore() {
   store.persist();
@@ -175,10 +230,6 @@ function getUserByEmail(email) {
   );
 }
 
-function readUserPassword(user) {
-  return String(user?.password || demoPassword);
-}
-
 function createPasswordResetRequest(email) {
   const token = crypto.randomBytes(24).toString("base64url");
   const timestamp = new Date().toISOString();
@@ -194,7 +245,7 @@ function createPasswordResetRequest(email) {
   const resetRequest = {
     id: nextId(store, "password_reset_requests"),
     email: String(email || "").trim().toLowerCase(),
-    token,
+    token_hash: hashResetToken(token),
     expires_at: expiresAt,
     used_at: null,
     created_at: timestamp,
@@ -202,7 +253,10 @@ function createPasswordResetRequest(email) {
   };
 
   store.collections.password_reset_requests.push(resetRequest);
-  return resetRequest;
+  return {
+    ...resetRequest,
+    token,
+  };
 }
 
 function findPasswordResetRequest(email, token) {
@@ -211,7 +265,7 @@ function findPasswordResetRequest(email, token) {
       (item) =>
         String(item.email || "").trim().toLowerCase() ===
           String(email || "").trim().toLowerCase() &&
-        String(item.token) === String(token)
+        String(item.token_hash || "") === hashResetToken(token)
     ) || null
   );
 }
@@ -279,6 +333,13 @@ function optionalAuth(req, res, next) {
 }
 
 function requireAuth(req, res, next) {
+  if (
+    req.path === "/employments_autocomplete_options" ||
+    req.path.startsWith("/employments_autocomplete_options/")
+  ) {
+    return next();
+  }
+
   if (!req.session) {
     return res.status(401).json({
       error: {
@@ -395,14 +456,14 @@ app.get("/mock-publications/:fileName", (req, res) => {
   return res.send(buffer);
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", authLoginLimiter, (req, res) => {
   return runSafe(res, () => {
     validateLoginPayload(req.body || {});
 
     const { email, password } = req.body || {};
     const user = getUserByEmail(email);
 
-    if (!user || String(password) !== readUserPassword(user)) {
+    if (!user || !verifyPassword(password, user.password)) {
       return res.status(422).json({
         error: {
           message: "Invalid email or password",
@@ -436,7 +497,7 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", authRegisterLimiter, (req, res) => {
   return runSafe(res, () => {
     const payload = req.body || {};
     validateAuthRegisterPayload(store, payload);
@@ -451,38 +512,42 @@ app.post("/api/auth/register", (req, res) => {
   });
 });
 
-app.post("/api/auth/forgot-password/request-reset-link", (req, res) => {
-  return runSafe(res, () => {
-    const payload = req.body || {};
-    validatePasswordResetRequestPayload(store, payload);
-    const user = getUserByEmail(payload.email);
+app.post(
+  "/api/auth/forgot-password/request-reset-link",
+  authResetRequestLimiter,
+  (req, res) => {
+    return runSafe(res, () => {
+      const payload = req.body || {};
+      validatePasswordResetRequestPayload(store, payload);
+      const user = getUserByEmail(payload.email);
 
-    if (!user) {
-      return res.status(404).json({
-        error: {
-          message: "No user was found for that email address.",
+      if (!user) {
+        return res.status(404).json({
+          error: {
+            message: "No user was found for that email address.",
+          },
+        });
+      }
+
+      const resetRequest = createPasswordResetRequest(payload.email);
+      persistStore();
+
+      return res.json({
+        message: "Password reset link generated in local mode.",
+        data: {
+          email: resetRequest.email,
+          reset_token: resetRequest.token,
+          expires_at: resetRequest.expires_at,
+          reset_url: `/authentication/reset-password?email=${encodeURIComponent(
+            resetRequest.email
+          )}&token=${encodeURIComponent(resetRequest.token)}`,
         },
       });
-    }
-
-    const resetRequest = createPasswordResetRequest(payload.email);
-    persistStore();
-
-    return res.json({
-      message: "Password reset link generated in local mode.",
-      data: {
-        email: resetRequest.email,
-        reset_token: resetRequest.token,
-        expires_at: resetRequest.expires_at,
-        reset_url: `/authentication/reset-password?email=${encodeURIComponent(
-          resetRequest.email
-        )}&token=${encodeURIComponent(resetRequest.token)}`,
-      },
     });
-  });
-});
+  }
+);
 
-app.post("/api/auth/reset-password", (req, res) => {
+app.post("/api/auth/reset-password", authResetLimiter, (req, res) => {
   return runSafe(res, () => {
     const payload = req.body || {};
     validateResetPasswordPayload(store, payload);
@@ -530,7 +595,7 @@ app.post("/api/auth/reset-password", (req, res) => {
       });
     }
 
-    user.password = String(payload.password);
+    user.password = hashPassword(payload.password);
     user.updated_at = new Date().toISOString();
     resetRequest.used_at = new Date().toISOString();
     resetRequest.updated_at = resetRequest.used_at;
@@ -555,6 +620,8 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
     message: "Logged out",
   });
 });
+
+app.use("/api", requireAuth);
 
 app.get("/api/auth/user", requireAuth, (req, res) => {
   return res.json(req.session.user);
@@ -759,7 +826,7 @@ app.post(
   }
 );
 
-app.post("/api/utilities/uploads/libraries", async (req, res) => {
+app.post("/api/utilities/uploads/libraries", uploadLimiter, async (req, res) => {
   return runSafeAsync(res, async () => {
     const isMultipart = String(req.headers["content-type"] || "").includes(
       "multipart/form-data"

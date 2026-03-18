@@ -43,7 +43,6 @@ export default defineComponent({
       e.preventDefault();
       e.stopImmediatePropagation();
       showModal.value = !showModal.value;
-      console.log(id);
     };
     const onCloseButtonClicked = (
       e: Event | MouseEvent,

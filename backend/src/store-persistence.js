@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createSeedState } = require("./data");
 const { createStore } = require("./mock-api-core");
+const { upgradePersistedCollections } = require("./security");
 
 const DATA_DIRECTORY = path.join(__dirname, "..", "data");
 const DATABASE_FILE = path.join(DATA_DIRECTORY, "app-db.json");
@@ -20,7 +21,7 @@ function writeJsonAtomic(filePath, payload) {
 }
 
 function resetPersistedCollections() {
-  const collections = createSeedState();
+  const collections = upgradePersistedCollections(createSeedState()).collections;
   writeJsonAtomic(DATABASE_FILE, {
     version: 1,
     updated_at: new Date().toISOString(),
@@ -39,7 +40,18 @@ function loadPersistedCollections(options = {}) {
 
   const raw = fs.readFileSync(DATABASE_FILE, "utf8");
   const payload = JSON.parse(raw);
-  return payload.collections || createSeedState();
+  const collections = payload.collections || createSeedState();
+  const upgraded = upgradePersistedCollections(collections);
+
+  if (upgraded.changed) {
+    writeJsonAtomic(DATABASE_FILE, {
+      version: 1,
+      updated_at: new Date().toISOString(),
+      collections: upgraded.collections,
+    });
+  }
+
+  return upgraded.collections;
 }
 
 function persistStore(store) {

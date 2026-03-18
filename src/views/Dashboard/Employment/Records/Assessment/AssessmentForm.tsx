@@ -216,7 +216,6 @@ export default defineComponent({
 
       if (statusCode.value === 200) {
         notification.notify("success", "SUCCESS", "Success Saved", "");
-        console.log(data.value);
         emit("submit");
       }
 
@@ -343,16 +342,7 @@ export default defineComponent({
       { immediate: false }
     );
 
-    onMounted(() => {
-      console.log(submitButtonRefs.value);
-    });
-
-    watch(
-      () => schedule.value,
-      (nVal, oldVal) => {
-        console.log({ nVal }, submitButtonRefs.value);
-      }
-    );
+    watch(() => schedule.value, () => undefined);
 
     return {
       data,
@@ -579,7 +569,6 @@ export default defineComponent({
                 ref="submitButtonRefs"
                 disabled={schedule === null}
                 onClick={() => {
-                  console.log(formData);
                   handlePostAction();
                 }}
                 class={

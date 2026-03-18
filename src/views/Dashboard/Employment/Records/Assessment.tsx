@@ -47,22 +47,13 @@ export default defineComponent({
         .get()
         .json();
       if (statusCode.value === 200) {
-        console.log(employmentResource.value);
         employmentResource.value = data.value.data;
       }
     };
 
     initEmploymentOnMount();
 
-    watch(
-      () => route.params.id,
-      (n, o) => {
-        console.log({
-          n,
-          o,
-        });
-      }
-    );
+    watch(() => route.params.id, () => undefined);
 
     const showAddPositionModal = ref<boolean>(false);
     const showAddPositionSpinner = ref<boolean>(false);
@@ -134,7 +125,6 @@ export default defineComponent({
 
       if (statusCode.value === 200) {
         notification.notify("success", "SUCCESS", "Success Saved", "");
-        console.log(data.value);
         closeAddPositionModal();
         initEmploymentOnMount();
       }
@@ -196,9 +186,6 @@ export default defineComponent({
     };
 
     const parentComponent = ref(null);
-
-    onMounted(() => console.log(employmentDetail.value));
-
     return {
       employmentResource,
       employmentDetail,
@@ -296,11 +283,6 @@ export default defineComponent({
                     spin={showAddPositionSpinner}
                     onSubmit={() => {
                       handleAssociatePositionToEmployee();
-                      console.log(
-                        "modal submitted",
-                        selectedPosition,
-                        pickedPosition
-                      );
                       initEmploymentOnMount();
                     }}
                     onCancel={() => {

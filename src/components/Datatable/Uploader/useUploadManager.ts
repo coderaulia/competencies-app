@@ -56,13 +56,10 @@ export default function useUploadManager(
   const notificator = useBasicNotification();
 
   onBeforeMount(() => {
-    state.broadcaster.bind("pusher:subscription_succeeded", () => {
-      console.log("pusher instantiated and succefully suscribed");
-    });
+    state.broadcaster.bind("pusher:subscription_succeeded", () => undefined);
   });
 
   onMounted(() => {
-    console.log("test");
     listenToChannel(state.broadcaster as Channel, [
       {
         eventName: "import.event.started",

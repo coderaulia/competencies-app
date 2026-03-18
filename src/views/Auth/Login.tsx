@@ -13,6 +13,8 @@ export default defineComponent({
     const authStore = useAuthStore();
     const isSubmitting = ref(false);
     const errorMessage = ref("");
+    const showDemoCredentials =
+      import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === "true";
     const formData = reactive({
       email: "demo@example.com",
       password: "password",
@@ -67,6 +69,7 @@ export default defineComponent({
       formData,
       handleLoginEvent,
       isSubmitting,
+      showDemoCredentials,
     };
   },
   render() {
@@ -130,9 +133,12 @@ export default defineComponent({
             </div>
           ) : null}
 
-          <div class={["rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800"]}>
-            Demo login: <strong>demo@example.com</strong> / <strong>password</strong>
-          </div>
+          {this.showDemoCredentials ? (
+            <div class={["rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800"]}>
+              Demo login: <strong>demo@example.com</strong> /{" "}
+              <strong>password</strong>
+            </div>
+          ) : null}
 
           <button
             type="submit"

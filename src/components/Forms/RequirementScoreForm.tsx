@@ -113,7 +113,6 @@ export default defineComponent({
           value: element?.id,
         };
       });
-      console.log(competencyOptions.value);
     };
     const initCompetencyLevelOptions = async () => {
       const { data } = await useApiService(
@@ -127,7 +126,6 @@ export default defineComponent({
           value: element?.id,
         };
       });
-      console.log(competencyLevelOptions.value);
     };
 
     const initPositionOptions = async () => {
@@ -142,7 +140,6 @@ export default defineComponent({
           value: element?.id,
         };
       });
-      console.log(positionOptions.value);
     };
 
     const initAllSelectOptionsMetadata = () => {

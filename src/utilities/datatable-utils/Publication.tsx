@@ -98,11 +98,10 @@ export const RenderApprovalSwitch = defineComponent({
       model.form.isVerified = val;
       approvePublication()
         .then((data) => {
-          console.log(data);
           datatable?.proxy.reload();
           notification.notify("success", "Approval Notification", "Publication [" + props.publication.publication_title +  "] successfulyy " + data.data.value.message, "")
         })
-        .catch((e) => console.log(e))
+        .catch(() => undefined)
     }
     
     async function approvePublication(){

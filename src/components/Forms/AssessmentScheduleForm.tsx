@@ -136,11 +136,6 @@ export default defineComponent({
         };
       }
     );
-
-    onMounted(() => {
-      console.log(yearPeriodOptions);
-    });
-
     return {
       method_,
       assessmentScheduleTitle_,

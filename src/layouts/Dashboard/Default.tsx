@@ -26,8 +26,8 @@ type NavSection = {
   items: NavItem[];
 };
 
-const allRoles = ["superadmin", "manager", "employee"];
-const personalRoles = ["superadmin", "manager", "employee"];
+const authenticatedRoles = ["superadmin", "manager", "employee"];
+const superadminRoles = ["superadmin"];
 const detailedUserRouteNames = new Set([
   "MyProfile",
   "MyEmploymentDetail",
@@ -38,38 +38,48 @@ const detailedUserRouteNames = new Set([
 
 const navSections: NavSection[] = [
   {
-    title: "Workspace",
-    items: [{ name: "Home", label: "Dashboard home", roles: allRoles }],
+    title: "Overview",
+    items: [{ name: "Home", label: "Dashboard Home", roles: authenticatedRoles }],
   },
   {
-    title: "Resources",
+    title: "Workforce",
     items: [
-      { name: "User", label: "Users", roles: ["superadmin"] },
-      { name: "Role", label: "Roles", roles: ["superadmin"] },
-      { name: "Permission", label: "Permissions", roles: ["superadmin"] },
       {
         name: "Employment",
         label: "Employees",
-        roles: ["superadmin"],
+        roles: superadminRoles,
         matches: ["EmploymentAssessment", "EmploymentAssessmentLegacy"],
       },
-      { name: "Position", label: "Positions", roles: ["superadmin"] },
-      { name: "Competency", label: "Competencies", roles: ["superadmin"] },
+      { name: "User", label: "Users", roles: superadminRoles },
+    ],
+  },
+  {
+    title: "Access Control",
+    items: [
+      { name: "Role", label: "Roles", roles: superadminRoles },
+      { name: "Permission", label: "Permissions", roles: superadminRoles },
+    ],
+  },
+  {
+    title: "Competency System",
+    items: [
+      { name: "Position", label: "Positions", roles: superadminRoles },
+      { name: "Competency", label: "Competencies", roles: superadminRoles },
       {
         name: "CompetencyLevel",
-        label: "Competency levels",
-        roles: ["superadmin"],
+        label: "Competency Levels",
+        roles: superadminRoles,
       },
-      { name: "Training", label: "Trainings", roles: ["superadmin"] },
+      { name: "Training", label: "Trainings", roles: superadminRoles },
       {
         name: "AssessmentSchedule",
-        label: "Assessment schedules",
-        roles: ["superadmin"],
+        label: "Assessment Schedules",
+        roles: superadminRoles,
       },
       {
         name: "MatrixesRequirementScores",
-        label: "Requirement scores",
-        roles: ["superadmin"],
+        label: "Requirement Scores",
+        roles: superadminRoles,
       },
     ],
   },
@@ -78,58 +88,67 @@ const navSections: NavSection[] = [
     items: [
       {
         name: "EmployeAssessmentAnalytics",
-        label: "Employee records",
-        roles: ["superadmin"],
+        label: "Employee Records",
+        roles: superadminRoles,
         matches: ["EmployeAssessmentAnalyticsDetails"],
       },
       {
         name: "DepartmentGroupChildrens",
-        label: "Department charts",
-        roles: ["superadmin"],
+        label: "Department Charts",
+        roles: superadminRoles,
       },
     ],
   },
   {
-    title: "My Data",
+    title: "My Workspace",
     items: [
-      { name: "MyProfile", label: "Profile", roles: personalRoles },
+      { name: "MyProfile", label: "Profile", roles: authenticatedRoles },
       {
         name: "MyEmploymentDetail",
-        label: "Employment detail",
-        roles: personalRoles,
+        label: "Employment Detail",
+        roles: authenticatedRoles,
       },
       {
         name: "MyEmploymentHierarchies",
-        label: "Reporting lines",
-        roles: personalRoles,
+        label: "Reporting Lines",
+        roles: authenticatedRoles,
       },
       {
         name: "MySelfAssessmentRecords",
-        label: "Self assessments",
-        roles: personalRoles,
+        label: "Self Assessments",
+        roles: authenticatedRoles,
       },
       {
         name: "MySubordinatesRecords",
         label: "Subordinates",
-        roles: personalRoles,
+        roles: authenticatedRoles,
       },
     ],
   },
   {
     title: "Library",
     items: [
-      { name: "BucketManagement", label: "Buckets", roles: ["superadmin"] },
-      { name: "Publication", label: "Upload form", roles: allRoles },
+      {
+        name: "BucketManagement",
+        label: "Buckets",
+        roles: superadminRoles,
+        matches: ["FileStorageBucket"],
+      },
+      {
+        name: "Publication",
+        label: "Upload Publication",
+        roles: authenticatedRoles,
+      },
       {
         name: "UploadListPublication",
-        label: "Publication lists",
-        roles: allRoles,
-        matches: ["FileStorageBucket", "UploadedPublicationDetail"],
+        label: "Publication Lists",
+        roles: authenticatedRoles,
+        matches: ["UploadedPublicationDetail"],
       },
       {
         name: "SuperadminPublicationManagement",
-        label: "Approvals",
-        roles: ["superadmin"],
+        label: "Publication Approvals",
+        roles: superadminRoles,
       },
     ],
   },

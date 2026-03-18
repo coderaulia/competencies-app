@@ -49,8 +49,6 @@ export default defineComponent({
           return;
       }
     }
-
-    onMounted(() => console.log(roles.value));
     return {
       renderer,
     };
@@ -214,14 +212,10 @@ const SuperadminSection = defineComponent({
         )
           .get()
           .blob();
-        if (error) {
-          console.log(error.value);
-        }
         if (statusCode.value === 200) {
           useFileSaver(data.value as Blob, "export_sub_empl_report.xlsx");
         }
       } catch (error) {
-        console.log(error);
       }
     };
     return {
@@ -461,14 +455,10 @@ const EmployeeSection = defineComponent({
         )
           .get()
           .blob();
-        if (error) {
-          console.log(error.value);
-        }
         if (statusCode.value === 200) {
           useFileSaver(data.value as Blob, "export_sub_empl_report.xlsx");
         }
       } catch (error) {
-        console.log(error);
       }
     };
 
@@ -567,9 +557,6 @@ const RenderModalDetailInspection = defineComponent({
   setup(props, {}) {
     const isOpen = ref<boolean>(false);
 
-    onMounted(() => {
-      console.log(props.employment);
-    });
     return {
       isOpen,
       employment: toRef(props, "employment"),

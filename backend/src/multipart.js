@@ -2,16 +2,27 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { ApiError } = require("./api-errors");
 
 function parseBoundary(contentType) {
   const match = String(contentType || "").match(/boundary=(?:"([^"]+)"|([^;]+))/i);
   return match ? match[1] || match[2] : null;
 }
 
-async function readRequestBuffer(req) {
+async function readRequestBuffer(req, options = {}) {
+  const maxBytes = Number(options.maxBytes) || 10 * 1024 * 1024;
   const chunks = [];
+  let totalBytes = 0;
+
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += bufferChunk.length;
+
+    if (totalBytes > maxBytes) {
+      throw new ApiError("Multipart payload is too large.", 413);
+    }
+
+    chunks.push(bufferChunk);
   }
   return Buffer.concat(chunks);
 }

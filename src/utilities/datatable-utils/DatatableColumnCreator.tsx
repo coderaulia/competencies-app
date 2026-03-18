@@ -200,7 +200,6 @@ export const RenderDeleteIconAction = defineComponent({
           ""
         );
         toogleModal();
-        console.log(data);
       } else {
         loadingError();
         notification.notify(
@@ -215,12 +214,7 @@ export const RenderDeleteIconAction = defineComponent({
       }
     };
 
-    watch(
-      () => showModal.value,
-      (o, n) => {
-        console.log(o, n);
-      }
-    );
+    watch(() => showModal.value, () => undefined);
     return {
       id,
       href,

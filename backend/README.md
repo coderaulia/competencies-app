@@ -7,6 +7,7 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 ## Covered areas
 
 - Auth and session tokens
+- Password hashing and reset-token hashing for the local JSON store
 - Generic CRUD for the main admin resources
 - Aggregate employee read endpoints built from `user + profile + employment`
 - Datatable search and pagination
@@ -18,6 +19,7 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 - Mock PDF document delivery for publication detail screens
 - Import endpoints for the Excel importer UI
 - Persistent JSON database stored at `backend/data/app-db.json`
+- Basic rate limiting, CORS restriction, and request-size limits
 
 ## Main endpoints
 
@@ -56,6 +58,11 @@ npm install
 npm run dev
 ```
 
+Optional backend env:
+
+- `BACKEND_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
+- `BACKEND_RESET_ON_BOOT=true`
+
 ## Reset local data
 
 ```sh
@@ -67,6 +74,20 @@ npm run reset-db
 ```sh
 npm run check
 ```
+
+## Public endpoints
+
+These routes intentionally stay public for the current frontend:
+
+- `GET /api/health`
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `POST /api/auth/forgot-password/request-reset-link`
+- `POST /api/auth/reset-password`
+- `GET /api/employments_autocomplete_options`
+- `GET /api/employments_autocomplete_options/:id`
+
+All other `/api/*` routes now require a bearer token.
 
 ## Aggregate employee layer
 

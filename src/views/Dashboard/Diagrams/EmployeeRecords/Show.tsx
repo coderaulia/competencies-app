@@ -117,13 +117,11 @@ export default defineComponent({
         // @ts-ignore
         config.value = options_;
         loading.value = false;
-        console.log(indicator, series, options_);
       }
     };
 
     onMounted(async () => {
       await init(route.params.employeeID);
-      console.log(chartRefs.value, config.value);
     });
 
     function buildIndicator(data: IAssessmentChart[] | []) {

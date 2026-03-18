@@ -1,4 +1,4 @@
-import { defineComponent, toRef, ref, computed, onMounted } from "vue";
+import { defineComponent, toRef, computed } from "vue";
 
 export const Button = defineComponent({
   name: "Button",
@@ -89,10 +89,6 @@ export const Button = defineComponent({
           return "white";
           break;
       }
-    });
-
-    onMounted(() => {
-      console.log(scheme.value);
     });
     return {
       slots,

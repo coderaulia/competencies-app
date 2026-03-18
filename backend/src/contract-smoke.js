@@ -66,6 +66,32 @@ async function main() {
       true,
       "login should persist user session metadata"
     );
+    assert.notEqual(
+      loginPersistedState.collections.users[0].password,
+      "password",
+      "seeded passwords should not be persisted in plaintext"
+    );
+    assert.match(
+      loginPersistedState.collections.users[0].password,
+      /^scrypt\$/,
+      "seeded passwords should be scrypt hashed"
+    );
+
+    const unauthorizedUserShow = await request("/api/users/1");
+    assert.equal(
+      unauthorizedUserShow.response.status,
+      401,
+      "generic CRUD should require authentication"
+    );
+
+    const publicEmploymentLookup = await request(
+      "/api/employments_autocomplete_options"
+    );
+    assert.equal(
+      publicEmploymentLookup.response.status,
+      200,
+      "public employment lookup should remain accessible"
+    );
 
     const invalidLoginPayload = await request("/api/auth/login", {
       method: "POST",
@@ -126,6 +152,22 @@ async function main() {
     );
     assert.equal(resetRequest.payload.data.email, "auth.flow@example.com");
     assert.ok(resetRequest.payload.data.reset_token);
+    const resetRequestPersistedState = JSON.parse(
+      fs.readFileSync(DATABASE_FILE, "utf8")
+    );
+    const persistedResetRequest =
+      resetRequestPersistedState.collections.password_reset_requests.find(
+        (item) => item.email === "auth.flow@example.com"
+      );
+    assert.ok(
+      persistedResetRequest?.token_hash,
+      "reset requests should persist only a token hash"
+    );
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(persistedResetRequest, "token"),
+      false,
+      "reset requests should not persist raw reset tokens"
+    );
 
     const resetPassword = await request("/api/auth/reset-password", {
       method: "POST",

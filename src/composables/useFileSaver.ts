@@ -2,7 +2,6 @@ export default function useFileSaver(blobFile: Blob, filename: string) {
   if ((window.navigator as any).msSaveOrOpenBlob) {
     (window.navigator as any).msSaveOrOpenBlob(blobFile, filename);
   } else {
-    console.log(blobFile);
     const url = URL.createObjectURL(
       new Blob([blobFile as Blob], {
         type: "application/vnd.ms-excel",
