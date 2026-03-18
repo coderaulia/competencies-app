@@ -9,6 +9,17 @@ export type PaginationMeta = {
   per_page: number | undefined;
   total: number | undefined;
 };
+export const createEmptyPaginationMeta = (
+  perPage = defaultPageSizeOptions[1]?.value ?? 10
+): PaginationMeta => ({
+  current_page: 1,
+  from: 0,
+  to: 0,
+  last_page: 1,
+  links: [],
+  per_page: perPage,
+  total: 0,
+});
 export const defaultPageSizeOptions = [
   { label: "5 per page", value: 5 },
   { label: "10 per page", value: 10 },
@@ -37,15 +48,7 @@ export type ReactivePaginationFunction = (
 const useReactivePagination: ReactivePaginationFunction = (
   resource: string
 ) => {
-  const paginationMeta = ref<PaginationMeta>({
-    current_page: 0,
-    from: 0,
-    to: 0,
-    last_page: 0,
-    links: [],
-    per_page: 10,
-    total: 0,
-  });
+  const paginationMeta = ref<PaginationMeta>(createEmptyPaginationMeta());
   const resourceName = ref(resource);
   const reactivePaginationProps = reactive<CustomPaginationProps>({
     page: paginationMeta.value.current_page ?? 1,
@@ -63,11 +66,15 @@ const useReactivePagination: ReactivePaginationFunction = (
       reactivePaginationProps.page = 1;
     },
     setPaginationMeta: (meta: PaginationMeta | null) => {
-      if (meta !== null) {
-        reactivePaginationProps.page = meta.current_page;
-        reactivePaginationProps.pageSize = meta.per_page;
-        reactivePaginationProps.itemCount = meta.total;
-      }
+      const normalizedMeta = {
+        ...createEmptyPaginationMeta(reactivePaginationProps.pageSize),
+        ...(meta || {}),
+      };
+      paginationMeta.value = normalizedMeta;
+      reactivePaginationProps.page = normalizedMeta.current_page ?? 1;
+      reactivePaginationProps.pageSize =
+        normalizedMeta.per_page ?? reactivePaginationProps.pageSize;
+      reactivePaginationProps.itemCount = normalizedMeta.total ?? 0;
     },
     onChangePageCallback: (cb: () => void) => {
       cb();

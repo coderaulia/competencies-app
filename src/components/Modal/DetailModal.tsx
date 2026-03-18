@@ -26,13 +26,12 @@ export default defineComponent({
     },
   },
   emits: ["submit", "cancel", "close", "toogle"],
-  setup(props, { slots, emit }) {
+  setup(props, { emit }) {
     const { show, title, spin } = toRefs(props);
     const show_ = computed(() => show.value);
     const title_ = computed(() => title.value);
     const spin_ = computed(() => spin.value);
     return {
-      slots,
       emit,
       show_,
       title_,
@@ -40,7 +39,7 @@ export default defineComponent({
     };
   },
   render() {
-    const { slots, emit } = this;
+    const { emit } = this;
     return (
       <NModal v-model:show={this.show_} role={"dialog"} aria-modal={true}>
         <NCard
@@ -66,8 +65,7 @@ export default defineComponent({
             default: () => (
               <NSpin v-model:show={this.spin_}>
                 <NScrollbar style="max-height: 500px" trigger="hover">
-                  {/* @ts-ignore */}
-                  {slots.default()}
+                  {this.$slots.default?.()}
                 </NScrollbar>
               </NSpin>
             ),

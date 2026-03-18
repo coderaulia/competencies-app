@@ -12,15 +12,13 @@ import {
 } from "vue";
 
 export type UploadManagerReturn = {
-  handler: {
-    endpoint: string;
-  };
   state: {
     currentRowIndex: number;
     totalRows: number;
     proggress: number;
     showProggress: boolean;
-    broadcaster: Channel;
+    broadcaster: Channel | null;
+    supportsRealtimeProgress: boolean;
   };
 };
 export type UploadConfigAction = {
@@ -50,16 +48,24 @@ export default function useUploadManager(
     totalRows: 0,
     proggress: 0,
     showProggress: false,
-    broadcaster: channel("laravel-system-importer") as Channel,
+    broadcaster: channel("laravel-system-importer") as Channel | null,
+    supportsRealtimeProgress: Boolean(pusher),
   });
 
   const notificator = useBasicNotification();
 
   onBeforeMount(() => {
-    state.broadcaster.bind("pusher:subscription_succeeded", () => undefined);
+    state.broadcaster?.bind(
+      "pusher:subscription_succeeded",
+      () => undefined
+    );
   });
 
   onMounted(() => {
+    if (!state.broadcaster) {
+      return;
+    }
+
     listenToChannel(state.broadcaster as Channel, [
       {
         eventName: "import.event.started",
@@ -111,7 +117,9 @@ export default function useUploadManager(
     ]);
   });
 
-  onUnmounted(() => {});
+  onUnmounted(() => {
+    unsubscribeChannel(state.broadcaster);
+  });
 
   return {
     // @ts-ignore

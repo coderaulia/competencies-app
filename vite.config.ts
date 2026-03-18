@@ -14,6 +14,7 @@ export default defineConfig({
     vueJsx(),
   ],
   build: {
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -39,7 +40,19 @@ export default defineConfig({
             id.includes("/vooks/") ||
             id.includes("/vueuc/")
           ) {
-            return "naive-ui";
+            if (id.includes("/naive-ui/es/data-table/")) {
+              return "naive-ui-data";
+            }
+
+            if (
+              /\/naive-ui\/es\/(form|input|input-number|select|upload|checkbox|radio|switch|date-picker|time-picker|dynamic-input|cascader|tree-select|modal|card|tabs|grid|tag|button)\//.test(
+                id
+              )
+            ) {
+              return "naive-ui-ui";
+            }
+
+            return "naive-ui-core";
           }
 
           if (id.includes("/@vicons/")) {
@@ -47,6 +60,21 @@ export default defineConfig({
           }
 
           if (id.includes("/echarts/") || id.includes("/zrender/")) {
+            if (id.includes("/echarts/renderers/")) {
+              return "charts-renderers";
+            }
+
+            if (
+              id.includes("/echarts/charts/") ||
+              id.includes("/echarts/components/")
+            ) {
+              return "charts-features";
+            }
+
+            if (id.includes("/echarts/core") || id.includes("/zrender/")) {
+              return "charts-core";
+            }
+
             return "charts";
           }
 

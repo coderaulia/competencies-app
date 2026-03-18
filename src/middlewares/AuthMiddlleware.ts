@@ -11,9 +11,11 @@ export default function AuthMiddlleware(guard: RouteMiddlewareGuard) {
   ];
 
   const requiredAuthorization = !guestPath.includes(guard.to.path);
-  const user = useAuthStore().$state.user;
-  const isAuthenticatedUSer = useAuthStore().$state.isAuthenticated;
-  if (requiredAuthorization && !user?.id && !isAuthenticatedUSer) {
+  const store = useAuthStore();
+  const user = store.$state.user;
+  const token = store.access_token;
+
+  if (requiredAuthorization && (!user?.id || !token)) {
     return guard.next("/authentication/login");
   }
   return guard.next();

@@ -1,7 +1,5 @@
 import { defineComponent, reactive } from "vue";
-import BasicRadarChart from "@/components/Chart/RadarChart/BasicRadarChart";
-// @ts-ignore
-import * as echarts from "echarts";
+import type { EChartsOption } from "echarts";
 import { RouterView } from "vue-router";
 // todo render data should be automatically based on whic data is accessed to perform re-usability
 // so we determine to use  composable function to genersate chart configuration
@@ -9,7 +7,7 @@ import { RouterView } from "vue-router";
 export default defineComponent({
   name: "DiagramIndex",
   setup() {
-    const chartOptions: echarts.EChartsOption = reactive({
+    const chartOptions: EChartsOption = reactive({
       title: {
         text: "Production Department | Production Manager", // should be reactive
       },

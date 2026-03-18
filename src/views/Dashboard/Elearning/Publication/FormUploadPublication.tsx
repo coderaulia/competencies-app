@@ -1,7 +1,6 @@
 import useApiService from "@/composables/useApiService";
 import type { BucketCollections } from "@/models/Bucket";
 import { Archive24Regular } from "@vicons/fluent";
-import { Model } from "echarts";
 import {
   NAvatar,
   NButton,

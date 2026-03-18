@@ -1,4 +1,4 @@
-import { defineComponent, reactive, ref, computed, watch } from "vue";
+import { defineComponent, reactive, ref, computed, toRefs } from "vue";
 import {
   NUpload,
   NUploadDragger,
@@ -15,7 +15,6 @@ import {
 } from "@vicons/ionicons5";
 import { useAuthStore } from "@/stores/auth";
 import useUploadManager, { type UploadConfig } from "./useUploadManager";
-import { toRefs } from "@vueuse/core";
 export default defineComponent({
   name: "ExcelImporter",
   props: {
@@ -54,11 +53,9 @@ export default defineComponent({
     const isDisabled_ = computed({
       get: () => disableImport.value,
       set: (value) => {
-        // disableImport.value = value,
         emit("update:disableImport", value);
       },
     });
-    watch(() => path.value, () => undefined);
 
     const { state } = useUploadManager(onStarted, onFinished, onUpdated);
 
@@ -70,27 +67,21 @@ export default defineComponent({
       () =>
         import.meta.env.VITE_BACKEND_BASE_URL +
         config.action.path +
-        config.action.resource
+        (config.action.resource || "")
     );
-
-    watch(() => uploadHandler.value, () => undefined);
-
-    // const handler = reactive({
-    //   endpoint: import.meta.env.VITE_BACKEND_BASE_URL + config.action.path + config.action.resource
-    // })
 
     return {
       uploadRefs,
       state,
-      // handler,
       uploadHandler,
       label,
-      disableImport,
       isDisabled_,
     };
   },
   render() {
-    const { uploadRefs, state, disableImport, uploadHandler } = this;
+    const { uploadRefs, state, uploadHandler } = this;
+    const token = useAuthStore().access_token;
+
     return (
       <div class={["w-full"]}>
         <div class={["mt-2"]}>
@@ -110,8 +101,7 @@ export default defineComponent({
             onFinish={({ file, event }) => {}}
             headers={{
               Accept: "application/json",
-              Authorization:
-                "Bearer " + useAuthStore().$state.authorization?.access_token,
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
             }}
             method={"POST"}
             name={"xlsx_doc"}
@@ -151,7 +141,7 @@ export default defineComponent({
           </button>
         </div>
         <div class={["w-full mt-8"]}>
-          {state.showProggress && (
+          {state.supportsRealtimeProgress && state.showProggress && (
             <NProgress
               type="line"
               status="success"

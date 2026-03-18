@@ -17,8 +17,6 @@ export default defineComponent({
     return { title, subTitle };
   },
   render() {
-    const defaultSlot = this.$slots.default;
-
     return (
       <div class={["flex flex-col gap-y-4"]}>
         <div class={["flex items-start justify-between gap-4"]}>
@@ -39,7 +37,7 @@ export default defineComponent({
             {`As of ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`}
           </span>
         </div>
-        {defaultSlot ? defaultSlot() : null}
+        {this.$slots.default?.()}
       </div>
     );
   },

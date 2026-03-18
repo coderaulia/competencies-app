@@ -4,52 +4,35 @@ import {
   NuclearOutline,
 } from "@vicons/ionicons5";
 import useReactivePagination, {
+  createEmptyPaginationMeta,
   type PaginationMeta,
 } from "@/composables/useReactivePagination";
 import { watchDebounced } from "@vueuse/core";
 import {
-  NText,
-  NIcon,
   NDataTable,
   NForm,
   NInput,
   NTag,
-  NUpload,
-  NUploadDragger,
-  type DataTableRowKey,
   type FormInst,
-  NP,
-  type UploadInst,
-  NSpin,
-  NProgress,
+  type DataTableRowKey,
 } from "naive-ui";
 import type {
   InternalRowData,
   RowData,
   TableColumns,
 } from "naive-ui/es/data-table/src/interface";
-import { rowPropKeys } from "naive-ui/es/legacy-grid/src/Row";
 import {
   defineComponent,
   reactive,
   ref,
   toRef,
   computed,
-  type Ref,
-  type ToRef,
   onMounted,
   type ComputedRef,
   type PropType,
-  onBeforeMount,
-  watch,
   onBeforeUnmount,
-  getCurrentInstance,
 } from "vue";
-import { useAuthStore } from "@/stores/auth";
 import useBasicNotification from "@/composables/notifications/useBasicNotification";
-import type Pusher from "pusher-js/types/src/core/pusher";
-import usePusher from "@/composables/usePusher";
-import type ExcelImporter from "./Uploader/ExcelImporter";
 // import Echo from 'laravel-echo';
 // import Pusher from 'pusher-js';
 // Pusher.log = (message) => window.console.log(message);
@@ -76,33 +59,74 @@ export default defineComponent({
   emits: ["triggerUpdate", "updatePaginationPage", "updatePaginationPageSize"],
   setup(props, { emit, expose }) {
     const isLoading = ref<boolean>(false);
+    const notification = useBasicNotification();
     const resource = reactive({
       path: toRef(props, "path"),
       data: [],
       columns: [],
-      pagination: null,
+      pagination: createEmptyPaginationMeta(),
     });
     const { reactivePaginationProps } = useReactivePagination(
       resource.path as string
     );
-    const { setPaginationMeta, pageSize } = reactivePaginationProps;
+    const { setPaginationMeta } = reactivePaginationProps;
     const formRef = reactive({
       searchKeyword: null,
     });
     const formTemplateRefs = ref<FormInst | null>(null);
 
-    const fetchBaseUrl = ref("/" + resource.path + "?limit=" + pageSize);
-    const fetchBaseSearchUrl = ref(
-      "/" + resource.path + "/search?limit=" + pageSize
+    const fetchBaseUrl = ref("");
+    const fetchBaseSearchUrl = ref("");
+
+    const buildCollectionUrl = (
+      page = reactivePaginationProps.page ?? 1,
+      limit = reactivePaginationProps.pageSize ?? createEmptyPaginationMeta().per_page
+    ) => `/${resource.path}?page=${page}&limit=${limit}`;
+
+    const buildSearchUrl = (
+      limit = reactivePaginationProps.pageSize ?? createEmptyPaginationMeta().per_page
+    ) => `/${resource.path}/search?limit=${limit}`;
+
+    const syncRequestUrls = (
+      page = reactivePaginationProps.page ?? 1,
+      limit = reactivePaginationProps.pageSize ?? createEmptyPaginationMeta().per_page
+    ) => {
+      fetchBaseUrl.value = buildCollectionUrl(page, limit);
+      fetchBaseSearchUrl.value = buildSearchUrl(limit);
+    };
+
+    const resetTableState = (pageSize = reactivePaginationProps.pageSize) => {
+      const emptyPagination = createEmptyPaginationMeta(pageSize);
+      resource.data = [];
+      resource.pagination = emptyPagination;
+      setPaginationMeta(emptyPagination);
+    };
+
+    const handleFetchFailure = (
+      statusCode?: number | null,
+      message = "Unable to load table data right now."
+    ) => {
+      resetTableState();
+      if (statusCode && statusCode !== 401) {
+        notification.notify("error", "Request failed", message, "");
+      }
+    };
+
+    syncRequestUrls(
+      reactivePaginationProps.page,
+      reactivePaginationProps.pageSize
     );
 
     const checkedRowKeysRef = ref<DataTableRowKey[]>([]);
     const rowKey = (row: RowData) => row.id;
 
-    const transformHttpResponse = (data: Ref<RowData | any>) => {
-      resource.data = data.value.data;
-      resource.pagination = data.value.meta;
-      setPaginationMeta(resource.pagination as unknown as PaginationMeta);
+    const transformHttpResponse = (payload: RowData | any) => {
+      const response = payload?.value ?? payload ?? {};
+      const pagination = response.meta || createEmptyPaginationMeta();
+
+      resource.data = Array.isArray(response.data) ? response.data : [];
+      resource.pagination = pagination;
+      setPaginationMeta(pagination as PaginationMeta);
     };
 
     const resetReactiveData = () => {
@@ -122,13 +146,19 @@ export default defineComponent({
     const initializeAsynchronousData = async () => {
       startLoadingIndicator();
       try {
-        const { data } = await useApiService(fetchBaseUrl).get().json();
-        transformHttpResponse(data);
-        stopLoadingIndicator();
+        const { data, statusCode } = await useApiService(fetchBaseUrl).get().json();
+        if (statusCode.value === 200) {
+          transformHttpResponse(data);
+        } else {
+          handleFetchFailure(
+            statusCode.value,
+            data.value?.error?.message || "Unable to load table data right now."
+          );
+        }
       } catch (error) {
-        stopLoadingIndicator();
-        throw error;
+        handleFetchFailure(undefined);
       } finally {
+        stopLoadingIndicator();
       }
     };
 
@@ -137,21 +167,34 @@ export default defineComponent({
     const reload = () => reinitializeAsyncTask();
 
     const performAsynchronousSearch = async () => {
+      const keyword = String(formRef.searchKeyword || "").trim();
+      if (!keyword) {
+        syncRequestUrls(1, reactivePaginationProps.pageSize);
+        await initializeAsynchronousData();
+        return;
+      }
+
       startLoadingIndicator();
       try {
-        const { data } = await useApiService(fetchBaseSearchUrl)
+        const { data, statusCode } = await useApiService(fetchBaseSearchUrl)
           .post({
             search: {
-              value: formRef.searchKeyword,
+              value: keyword,
             },
           })
           .json();
-        transformHttpResponse(data);
-        stopLoadingIndicator();
+        if (statusCode.value === 200) {
+          transformHttpResponse(data);
+        } else {
+          handleFetchFailure(
+            statusCode.value,
+            data.value?.error?.message || "Unable to search table data right now."
+          );
+        }
       } catch (error) {
-        stopLoadingIndicator();
-        throw error;
+        handleFetchFailure(undefined, "Unable to search table data right now.");
       } finally {
+        stopLoadingIndicator();
       }
     };
 
@@ -168,7 +211,7 @@ export default defineComponent({
 
     watchDebounced(
       () => formRef.searchKeyword,
-      (o, n) => {
+      () => {
         performAsynchronousSearch();
       },
       { debounce: 500, maxWait: 1000 }
@@ -176,30 +219,14 @@ export default defineComponent({
 
     const handlerComponentEvents = {
       onUpdatePage: (page: number, callback?: Function) => {
-        // console.log({
-        //   pageSize,
-        // });
-        fetchBaseUrl.value =
-          "/" + resource.path + "?page=" + page + "&limit=" + pageSize;
+        syncRequestUrls(page, reactivePaginationProps.pageSize);
         reinitializeAsyncTask();
         if (typeof callback === "function") {
           callback();
         }
       },
       onUpdatePageSize: (pageSizeLimit: number, callback?: Function) => {
-        // console.log({
-        //   pageSizeLimit,
-        // });
-        fetchBaseUrl.value =
-          "/" +
-          resource.path +
-          "?page=" +
-          reactivePaginationProps.page +
-          "&limit=" +
-          pageSizeLimit;
-        // console.log({
-        //   pageSize,
-        // });
+        syncRequestUrls(1, pageSizeLimit);
         reinitializeAsyncTask();
         if (typeof callback === "function") {
           callback();
@@ -282,9 +309,6 @@ export default defineComponent({
             </NForm>
           </div>
         </div>
-
-        {this.$slots.importer?.()}
-
         <div class={["mt-8"]}>
           <NDataTable
             remote

@@ -251,28 +251,23 @@ export default defineComponent({
             setupPostAction();
           }}
         />
+        <div class={["flex flex-col w-full gap-3 mt-3"]}>
+          <NSelect
+            options={this.uploadResourceTypeOptions}
+            v-model:value={this.uploadResourceType}
+            placeholder={
+              "Choose the type of upload action that you need to import into database"
+            }
+            clearable
+          />
+          <ExcelImporter
+            v-model:path={this.uploadActionPath}
+            ref="uploadEmploymentComponentRefs"
+            label={""}
+            v-model:disableImport={this.uploadActionDisabled}
+          />
+        </div>
         <DatatableServerSide
-          v-slots={{
-            importer: () => (
-              <div class={["flex flex-col w-full gap-x-3 mt-3"]}>
-                <NSelect
-                  options={this.uploadResourceTypeOptions}
-                  v-model:value={this.uploadResourceType}
-                  placeholder={
-                    "Choose the type of upload action that you need to import into database"
-                  }
-                  clearable
-                />
-                <ExcelImporter
-                  v-model:path={this.uploadActionPath}
-                  ref="uploadEmploymentComponentRefs"
-                  class={[""]}
-                  label={""}
-                  v-model:disableImport={this.uploadActionDisabled}
-                />
-              </div>
-            ),
-          }}
           ref="datatableRefs"
           path={backend}
           columns={columns}

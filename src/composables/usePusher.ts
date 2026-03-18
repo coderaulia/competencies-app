@@ -16,7 +16,8 @@ export type PusherConnectionEvent =
 export default function usePusher() {
   const app = getCurrentInstance();
 
-  const pusher: Pusher = app?.appContext.config.globalProperties.$pusher;
+  const pusher: Pusher | undefined =
+    app?.appContext.config.globalProperties.$pusher;
 
   /**
    * Pusher instance.
@@ -26,6 +27,10 @@ export default function usePusher() {
    * @returns {*}
    */
   const channel = (channelName: string) => {
+    if (!pusher) {
+      return null;
+    }
+
     return pusher.subscribe(channelName);
   };
 
@@ -36,7 +41,14 @@ export default function usePusher() {
    * @param {Channel} channel
    * @param {PusherListener[]} listeners
    */
-  const listenToChannel = (channel: Channel, listeners: PusherListener[]) => {
+  const listenToChannel = (
+    channel: Channel | null,
+    listeners: PusherListener[]
+  ) => {
+    if (!channel) {
+      return;
+    }
+
     listeners.forEach(({ eventName, eventCallback }) => {
       channel.bind(eventName, eventCallback);
     });
@@ -48,7 +60,11 @@ export default function usePusher() {
    *
    * @param {Channel} channel
    */
-  const unsubscribeChannel = (channel: Channel) => {
+  const unsubscribeChannel = (channel: Channel | null) => {
+    if (!channel) {
+      return;
+    }
+
     channel.unsubscribe();
   };
 

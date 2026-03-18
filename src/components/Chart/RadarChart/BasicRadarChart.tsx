@@ -1,13 +1,31 @@
 import { defineComponent, ref, toRefs, computed, onMounted, watch } from "vue";
 import { RadarChartProps } from "./BasicRadarChartProps";
-// @ts-ignore
-import * as echarts from "echarts";
-// You can use only the renderers you need
+import {
+  init as initEchart,
+  use,
+  type EChartsType,
+  type EChartsOption,
+} from "echarts/core";
+import { RadarChart } from "echarts/charts";
+import {
+  RadarComponent,
+  TitleComponent,
+  LegendComponent,
+  TooltipComponent,
+} from "echarts/components";
 import { SVGRenderer, CanvasRenderer } from "echarts/renderers";
 
-// echarts.use([SVGRenderer, CanvasRenderer]);
+use([
+  RadarChart,
+  RadarComponent,
+  TitleComponent,
+  LegendComponent,
+  TooltipComponent,
+  SVGRenderer,
+  CanvasRenderer,
+]);
 
-export type EchartInstanceType = echarts.ECharts;
+export type EchartInstanceType = EChartsType;
 
 export default defineComponent({
   name: "BasicRadarChart",
@@ -19,23 +37,22 @@ export default defineComponent({
     );
     const styleProps = computed(() => style.value);
 
-    let chartInstance: echarts.ECharts | null = null;
+    let chartInstance: EChartsType | null = null;
 
-    function refreshChart(instance: echarts.ECharts) {
-      instance.setOption(options.value as echarts.EChartsOption);
+    function refreshChart(instance: EChartsType) {
+      instance.setOption(options.value as EChartsOption);
     }
 
     onMounted(() => {
-      let chart = echarts.init(radarChartRefs.value as HTMLElement);
+      const chart = initEchart(radarChartRefs.value as HTMLElement);
       chartInstance = chart;
       refreshChart(chartInstance);
     });
 
     watch(
       () => options.value,
-      (nVal) => {
-        // console.log({nVal})
-        chartInstance?.setOption(options.value as echarts.EChartsOption);
+      () => {
+        chartInstance?.setOption(options.value as EChartsOption);
       },
       {
         deep: true,
