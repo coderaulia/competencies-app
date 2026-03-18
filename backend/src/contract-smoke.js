@@ -820,6 +820,20 @@ async function main() {
       createdCertification.payload.data.employment.id,
       createdEmployment.payload.data.id
     );
+    const employmentWithCertification = await request(
+      `/api/employments/${createdEmployment.payload.data.id}`,
+      { token }
+    );
+    assert.equal(
+      employmentWithCertification.response.status,
+      200,
+      "employment show with certification should succeed"
+    );
+    assert.equal(
+      employmentWithCertification.payload.data.certifications.length,
+      1,
+      "employment payload should expose linked certifications"
+    );
 
     const periodicalOnlySave = await request(
       `/api/transactions/assessment_record/${createdEmployment.payload.data.id}`,

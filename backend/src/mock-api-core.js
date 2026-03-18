@@ -1043,6 +1043,11 @@ function employmentSummary(store, employment, options = {}) {
         .filter((item) => Number(item.employment_id) === Number(employment.id))
         .map((item) => periodicalAssessmentSummary(store, item))
     : [];
+  const certifications = includeAssessments
+    ? store.collections.certifications
+        .filter((item) => Number(item.employment_id) === Number(employment.id))
+        .map((item) => certificationSummary(store, item))
+    : [];
 
   return {
     id: employment.id,
@@ -1118,6 +1123,7 @@ function employmentSummary(store, employment, options = {}) {
     assessmentRecords: includeAssessments ? records : [],
     assessment_records: includeAssessments ? records : [],
     appliedAssessmentLogs: includeAssessments ? schedules : [],
+    certifications: includeAssessments ? certifications : [],
     periodicalGeneralAssessments: includeAssessments ? periodicalAssessments : [],
     periodical_general_assessments: includeAssessments ? periodicalAssessments : [],
     ...timestamps(employment),

@@ -25,6 +25,7 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AssessmentDetail from "./Assessment/AssessmentDetail";
+import CertificationPanel from "./Assessment/CertificationPanel";
 import AssessmentForm from "./Assessment/AssessmentForm";
 import AssessmentRecord from "./Assessment/AssessmentRecord";
 
@@ -314,7 +315,19 @@ export default defineComponent({
               name={"Certification"}
               tab={"Form Mandatory Certification"}
             >
-              To Be Developed In phase 2
+              {employmentDetail?.id ? (
+                <CertificationPanel
+                  employmentId={employmentDetail.id as number}
+                  certifications={employmentDetail.certifications ?? []}
+                  onSubmit={() => {
+                    initEmploymentOnMount();
+                  }}
+                />
+              ) : (
+                <NAlert title="Warning" type={"warning"} showIcon>
+                  Employment data is not available yet.
+                </NAlert>
+              )}
             </NTabPane>
           </NTabs>
         </NCard>

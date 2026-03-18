@@ -1,5 +1,6 @@
 import type { AssessmentRecordResource } from "./AssessmentRecord";
 import type { AssessmentScheduleResource } from "./AssessmentSchedule";
+import type { CertificationResource } from "./Certification";
 import type { CompanyResource } from "./Company";
 import type { DirectoratResource } from "./Directorat";
 import type { PersonelAreaResource } from "./PersonelArea";
@@ -36,5 +37,6 @@ export declare type EmploymentResource = {
   assessmentRecords?: AssessmentRecordResource[] | [];
   assessment_records?: AssessmentRecordResource[] | [];
   appliedAssessmentLogs?: AssessmentScheduleResource[] | [];
+  certifications?: CertificationResource[] | [];
 };
 export declare type EmploymentCollections = EmploymentResource[];
