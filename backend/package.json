@@ -1,0 +1,16 @@
+{
+  "name": "competencies-minimal-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal Express backend for the competencies frontend",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "check": "node src/contract-smoke.js",
+    "reset-db": "node src/reset-db.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

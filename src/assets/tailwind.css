@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .form-default {
+    @apply outline-none border-blue-500 border-2;
+  }
+}
