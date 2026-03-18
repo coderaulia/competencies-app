@@ -16,7 +16,6 @@ import {
   NTag,
   NUpload,
   NUploadDragger,
-  useLoadingBar,
   type DataTableRowKey,
   type FormInst,
   NP,
@@ -76,7 +75,6 @@ export default defineComponent({
   },
   emits: ["triggerUpdate", "updatePaginationPage", "updatePaginationPageSize"],
   setup(props, { emit, expose }) {
-    const loadingBar = useLoadingBar();
     const isLoading = ref<boolean>(false);
     const resource = reactive({
       path: toRef(props, "path"),
@@ -104,7 +102,6 @@ export default defineComponent({
     const transformHttpResponse = (data: Ref<RowData | any>) => {
       resource.data = data.value.data;
       resource.pagination = data.value.meta;
-      console.log(resource.pagination);
       setPaginationMeta(resource.pagination as unknown as PaginationMeta);
     };
 

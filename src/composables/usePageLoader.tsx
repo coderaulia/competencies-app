@@ -11,16 +11,23 @@ import { useLoadingBar } from "naive-ui";
  * @returns {{ loadingStart(): void; loadingError(): void; loadingFinish(): void; }}
  */
 const usePageLoader = () => {
-  const loading = useLoadingBar();
+  let loading: ReturnType<typeof useLoadingBar> | null = null;
+
+  try {
+    loading = useLoadingBar();
+  } catch {
+    loading = null;
+  }
+
   return {
     loadingStart() {
-      loading.start();
+      loading?.start();
     },
     loadingError() {
-      loading.error();
+      loading?.error();
     },
     loadingFinish() {
-      loading.finish();
+      loading?.finish();
     },
   };
 };

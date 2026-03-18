@@ -17,7 +17,14 @@ import { h, ref, type VNodeChild } from "vue";
  * @returns {({ notificationRef: any; notify(type: any, title: string | (() => any), description: string | (() => any), content: string | (() => any)): void; })}
  */
 const useBasicNotification = () => {
-  const notification = useNotification();
+  let notification: ReturnType<typeof useNotification> | null = null;
+
+  try {
+    notification = useNotification();
+  } catch {
+    notification = null;
+  }
+
   const notificationRef = ref<NotificationReactive | null>(null);
   return {
     notificationRef,
@@ -27,6 +34,11 @@ const useBasicNotification = () => {
       description: string | (() => VNodeChild) | undefined,
       content: string | (() => VNodeChild) | undefined
     ) {
+      if (!notification) {
+        notificationRef.value = null;
+        return;
+      }
+
       notificationRef.value = notification.create({
         type,
         title,
