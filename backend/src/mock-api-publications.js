@@ -62,18 +62,10 @@ function uploadPublication(store, payload = {}) {
   return core.createPublicationRecord(store, payload);
 }
 
-function importResource(resource, payload = {}) {
-  const fileName = payload.fileName ? ` (${payload.fileName})` : "";
-  return {
-    message: `Import for ${resource} accepted${fileName}.`,
-  };
-}
-
 module.exports = {
   getPublicationBucketLists,
   getPublicationBucketDetail,
   getPublicationCategories,
   approvePublication,
   uploadPublication,
-  importResource,
 };

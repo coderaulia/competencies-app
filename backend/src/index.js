@@ -884,7 +884,9 @@ app.post("/api/utilities/importers/:resource", async (req, res) => {
     );
 
     if (!isMultipart) {
-      return res.json(importResource(req.params.resource, req.body || {}));
+      const payload = importResource(store, req.params.resource, req.body || {});
+      persistStore();
+      return res.json(payload);
     }
 
     const { primaryFile } = await readMultipartPayload(req);
@@ -903,11 +905,11 @@ app.post("/api/utilities/importers/:resource", async (req, res) => {
     const fileName = `${Date.now()}-${path.basename(primaryFile.fileName)}`;
     saveUploadedFile(resourceDirectory, fileName, primaryFile.buffer);
 
-    return res.json(
-      importResource(req.params.resource, {
-        fileName,
-      })
-    );
+    const payload = importResource(store, req.params.resource, {
+      fileName,
+    });
+    persistStore();
+    return res.json(payload);
   });
 });
 

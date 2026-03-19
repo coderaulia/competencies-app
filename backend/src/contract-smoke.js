@@ -145,6 +145,110 @@ async function main() {
       await assertSeededResource(resource, token);
     }
 
+    const dashboardEmploymentsWithAssessments = await request(
+      "/api/utilities/dashboard/superadmin/employments_has_assessments?limit=10",
+      { token }
+    );
+    assert.equal(
+      dashboardEmploymentsWithAssessments.response.status,
+      200,
+      "dashboard employment list should succeed"
+    );
+    assert.ok(
+      dashboardEmploymentsWithAssessments.payload.data.length > 0,
+      "dashboard employment list should expose seeded assessment rows"
+    );
+    assert.ok(
+      Number(dashboardEmploymentsWithAssessments.payload.total) > 0,
+      "dashboard employment list should expose pagination totals"
+    );
+
+    const dashboardExport = await request(
+      "/api/utilities/dashboard/exports/superadmin/employments_has_assessments",
+      { token }
+    );
+    assert.equal(
+      dashboardExport.response.status,
+      200,
+      "dashboard export should succeed"
+    );
+    assert.match(
+      String(dashboardExport.payload),
+      /id,employee_name,position_name,report_to/,
+      "dashboard export should return the expected CSV header"
+    );
+
+    const appliedEmployeesAnalytics = await request(
+      "/api/utilities/analytics/aplied_employes",
+      { token }
+    );
+    assert.equal(
+      appliedEmployeesAnalytics.response.status,
+      200,
+      "applied employees analytics should succeed"
+    );
+    assert.ok(
+      appliedEmployeesAnalytics.payload.statistics.length > 0,
+      "applied employees analytics should expose schedule statistics"
+    );
+
+    const employeeAnalytics = await request(
+      "/api/utilities/analytics/employes?limit=10",
+      { token }
+    );
+    assert.equal(
+      employeeAnalytics.response.status,
+      200,
+      "employee analytics list should succeed"
+    );
+    assert.ok(
+      employeeAnalytics.payload.data.length > 0,
+      "employee analytics list should expose seeded employee rows"
+    );
+
+    const employeeAnalyticsDetail = await request(
+      `/api/utilities/analytics/employes/${employeeAnalytics.payload.data[0].employe_id}`,
+      { token }
+    );
+    assert.equal(
+      employeeAnalyticsDetail.response.status,
+      200,
+      "employee analytics detail should succeed"
+    );
+    assert.ok(
+      employeeAnalyticsDetail.payload.data.employe_asssessment_chart_data.length > 0,
+      "employee analytics detail should expose chart-ready assessment data"
+    );
+
+    const departmentAnalytics = await request(
+      "/api/utilities/analytics/competence_employe/by_department",
+      { token }
+    );
+    assert.equal(
+      departmentAnalytics.response.status,
+      200,
+      "department analytics list should succeed"
+    );
+    assert.ok(
+      departmentAnalytics.payload.data.length > 0,
+      "department analytics list should expose seeded departments"
+    );
+
+    const departmentAnalyticsDetail = await request(
+      `/api/utilities/analytics/competence_employe/by_department/${departmentAnalytics.payload.data[0].department_id}?showParticipation=true`,
+      { token }
+    );
+    assert.equal(
+      departmentAnalyticsDetail.response.status,
+      200,
+      "department analytics detail should succeed"
+    );
+    assert.ok(
+      departmentAnalyticsDetail.payload.data.department_overview
+        .assessment_by_schedules.length > 0,
+      "department analytics detail should expose schedule participation data"
+    );
+
     const unauthorizedUserShow = await request("/api/users/1");
     assert.equal(
       unauthorizedUserShow.response.status,
@@ -692,6 +796,96 @@ async function main() {
       invalidPublicationUpload.payload.error.meta.publication_category_id.includes(
         "Publication category was not found."
       )
+    );
+
+    const stateBeforeEmploymentImport = JSON.parse(
+      fs.readFileSync(DATABASE_FILE, "utf8")
+    );
+    const employmentImportForm = new FormData();
+    employmentImportForm.set(
+      "xlsx_doc",
+      new Blob(["dummy employment import"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "employment-import.xlsx"
+    );
+
+    const employmentImport = await request("/api/utilities/importers/employments", {
+      method: "POST",
+      token,
+      formData: employmentImportForm,
+    });
+    assert.equal(
+      employmentImport.response.status,
+      200,
+      "employment importer should succeed"
+    );
+    assert.equal(employmentImport.payload.data.resource, "employments");
+    assert.equal(employmentImport.payload.data.imported_count, 2);
+    assert.equal(
+      employmentImport.payload.data.imported_employments.length,
+      2,
+      "employment importer should create two demo employments"
+    );
+    assert.ok(
+      employmentImport.payload.data.imported_employments.every(
+        (employment) => employment.parent_employment_id === null
+      ),
+      "employment importer should leave imported rows ready for hierarchy sync"
+    );
+
+    const stateAfterEmploymentImport = JSON.parse(
+      fs.readFileSync(DATABASE_FILE, "utf8")
+    );
+    assert.equal(
+      stateAfterEmploymentImport.collections.employments.length,
+      stateBeforeEmploymentImport.collections.employments.length + 2,
+      "employment importer should persist new employment rows"
+    );
+
+    const parentEmploymentImportForm = new FormData();
+    parentEmploymentImportForm.set(
+      "xlsx_doc",
+      new Blob(["dummy parent sync"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "parent-employment-sync.xlsx"
+    );
+
+    const parentEmploymentImport = await request(
+      "/api/utilities/importers/parent-employments",
+      {
+        method: "POST",
+        token,
+        formData: parentEmploymentImportForm,
+      }
+    );
+    assert.equal(
+      parentEmploymentImport.response.status,
+      200,
+      "parent employment importer should succeed"
+    );
+    assert.equal(
+      parentEmploymentImport.payload.data.resource,
+      "parent-employments"
+    );
+    assert.ok(
+      parentEmploymentImport.payload.data.updated_count >= 2,
+      "parent employment importer should synchronize the imported rows"
+    );
+
+    const syncedImportedEmployment = await request(
+      `/api/employments/${employmentImport.payload.data.imported_employments[0].id}`,
+      { token }
+    );
+    assert.equal(
+      syncedImportedEmployment.response.status,
+      200,
+      "synced imported employment should be readable"
+    );
+    assert.ok(
+      syncedImportedEmployment.payload.data.parent_employment_id,
+      "parent employment importer should attach a reporting line"
     );
 
     const createdPublication = await request("/api/publications", {

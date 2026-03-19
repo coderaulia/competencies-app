@@ -1,6 +1,5 @@
 import useBasicNotification from "@/composables/notifications/useBasicNotification";
 import usePusher from "@/composables/usePusher";
-import { watchDebounced } from "@vueuse/core";
 import type { Channel } from "pusher-js";
 import {
   computed,
@@ -8,7 +7,6 @@ import {
   onMounted,
   onUnmounted,
   reactive,
-  watch,
 } from "vue";
 
 export type UploadManagerReturn = {
@@ -37,7 +35,7 @@ export default function useUploadManager(
   onProgressFinished?: onProgressFinished,
   onProgressUpdated?: onProgressUpdated
 ): UploadManagerReturn {
-  const { channel, listenToChannel, unsubscribeChannel } = usePusher();
+  const { pusher, channel, listenToChannel, unsubscribeChannel } = usePusher();
 
   // const handler = reactive({
   //   endpoint: import.meta.env.VITE_BACKEND_BASE_URL + config.action.path + config.action.resource

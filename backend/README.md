@@ -17,7 +17,7 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 - Employee and department analytics
 - Publication buckets, uploads, and approval
 - Mock PDF document delivery for publication detail screens
-- Import endpoints for the Excel importer UI
+- Import endpoints for the Excel importer UI with dummy employment creation and hierarchy sync
 - Persistent JSON database stored at `backend/data/app-db.json`
 - Basic rate limiting, CORS restriction, and request-size limits
 
@@ -39,6 +39,17 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 - `POST /api/:resource`
 - `PATCH /api/:resource/:id`
 - `DELETE /api/:resource/:id`
+
+## Import workflows
+
+The importer endpoints now perform local demo mutations instead of pure no-op acknowledgements:
+
+- `POST /api/utilities/importers/employments`
+  - creates a small batch of dummy `user + profile + employment` records
+  - leaves imported employments without a parent so the hierarchy sync flow has work to do
+- `POST /api/utilities/importers/parent-employments`
+  - attaches reporting lines to employments that do not yet have a parent
+  - persists the updated hierarchy to the local JSON database
 
 ## Demo credentials
 
