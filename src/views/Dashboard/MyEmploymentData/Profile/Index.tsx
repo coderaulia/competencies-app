@@ -1,6 +1,7 @@
-import { defineComponent, inject, onMounted, ref } from "vue";
+import { defineComponent, inject } from "vue";
 import type { UserResource } from "@/models/User";
 import { UserInjectionKey } from "@/layouts/Dashboard/Default";
+import { formatUtcDate } from "@/utilities/date-display";
 export default defineComponent({
   name: "MyDataProfileIndex",
   setup() {
@@ -96,11 +97,7 @@ export default defineComponent({
                           Date of Birth
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {new Date(
-                            this.user?.profile?.profile_date_of_birth as
-                              | string
-                              | number
-                          ).toUTCString()}
+                          {formatUtcDate(this.user?.profile?.profile_date_of_birth)}
                         </dd>
                       </div>
                       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

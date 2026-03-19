@@ -9,6 +9,7 @@ import type { TrainingResource } from "./Training";
  * @typedef {CompetencyResource}
  */
 export declare type CompetencyResource = {
+  id?: number | null;
   competency_name: string | null;
   minimum_score_by_level: RequirementScoreResource | null;
   trainings: TrainingResource[] | unknown[];

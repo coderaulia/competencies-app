@@ -101,6 +101,43 @@ async function main() {
       authUser.payload.profile?.employment,
       "auth user should expose linked employment data"
     );
+    assert.ok(
+      Array.isArray(authUser.payload.profile?.employment?.children),
+      "auth user employment should expose child collections"
+    );
+
+    const managerLogin = await request("/api/auth/login", {
+      method: "POST",
+      body: {
+        email: "sara.manager@example.com",
+        password: "password",
+      },
+    });
+    assert.equal(
+      managerLogin.response.status,
+      200,
+      "manager login should succeed"
+    );
+    const managerAuthUser = await request("/api/auth/user", {
+      token: managerLogin.payload.oAuth.access_token,
+    });
+    assert.equal(
+      managerAuthUser.response.status,
+      200,
+      "manager auth user should succeed"
+    );
+    assert.ok(
+      managerAuthUser.payload.profile?.employment?.parent,
+      "manager auth user should expose a reporting line"
+    );
+    assert.ok(
+      Array.isArray(managerAuthUser.payload.profile?.employment?.children),
+      "manager auth user should expose subordinates"
+    );
+    assert.ok(
+      Array.isArray(managerAuthUser.payload.profile?.employment?.appliedAssessmentLogs),
+      "manager auth user should expose applied assessment logs"
+    );
     assert.ok(fs.existsSync(DATABASE_FILE), "persistent database file should exist");
     const loginPersistedState = JSON.parse(fs.readFileSync(DATABASE_FILE, "utf8"));
     assert.equal(

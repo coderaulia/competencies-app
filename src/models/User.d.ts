@@ -17,7 +17,7 @@ export declare type UserResource = {
   permissions: Array<PermissionCollections> | [];
   profile: ProfileResource | null;
   is_logged_in?: boolean;
-  last_logged_in_at?: strig;
+  last_logged_in_at?: string | null;
   last_logged_in_host?: string;
   last_logged_in_port?: string;
   last_logged_in_user_agent?: string;

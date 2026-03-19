@@ -9,7 +9,9 @@ import type { CompetencyResource } from "./Competency";
  * @typedef {PositionResource}
  */
 export declare type PositionResource = {
+  id?: number | null;
   position_name: string | null;
+  attachedCompetenciesCount?: number | null;
   competency_by_level?: CompetencyResource[] | [];
 };
 export declare type PositionCollections = PositionResource[];

@@ -1,8 +1,7 @@
-import { computed, defineComponent, inject, onMounted } from "vue";
+import { computed, defineComponent, inject } from "vue";
 import type { UserResource } from "@/models/User";
 import { UserInjectionKey } from "@/layouts/Dashboard/Default";
-import { RenderActionModal } from "@/utilities/datatable-utils/Employment";
-import type { EmploymentResource } from "@/models/Employment";
+import { NEmpty } from "naive-ui";
 export default defineComponent({
   name: "MyDataEmploymentHierarchiesIndex",
   setup() {
@@ -14,6 +13,8 @@ export default defineComponent({
     };
   },
   render() {
+    const parentEmployment = this.user?.profile?.employment?.parent;
+
     return (
       <div
         class={[
@@ -45,52 +46,46 @@ export default defineComponent({
                   </p>
                 </div>
                 <div class="border-t border-gray-200">
-                  <dl>
-                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-green-500">
-                        Report to Email Address
-                      </dt>
-                      <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                        {
-                          this.user?.profile?.employment?.parent?.profile?.user
-                            ?.email
-                        }
-                      </dd>
+                  {parentEmployment ? (
+                    <dl>
+                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Report to Email Address
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {parentEmployment.profile?.user?.email ?? "-"}
+                        </dd>
+                      </div>
+                      <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Report to Fullname
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {parentEmployment.profile?.profile_fullname ?? "-"}
+                        </dd>
+                      </div>
+                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Report to Gender
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {parentEmployment.profile?.profile_gender ?? "-"}
+                        </dd>
+                      </div>
+                      <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Report to Nationality
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {parentEmployment.profile?.profile_nationality ?? "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <div class={["px-4 py-6"]}>
+                      <NEmpty description="No reporting line is assigned yet." />
                     </div>
-                    <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-green-500">
-                        Report to Fullname
-                      </dt>
-                      <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                        {
-                          this.user?.profile?.employment?.parent?.profile
-                            ?.profile_fullname
-                        }
-                      </dd>
-                    </div>
-                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-green-500">
-                        Report to Gender
-                      </dt>
-                      <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                        {
-                          this.user?.profile?.employment?.parent?.profile
-                            ?.profile_gender
-                        }
-                      </dd>
-                    </div>
-                    <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-green-500">
-                        Report to Nationality
-                      </dt>
-                      <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                        {
-                          this.user?.profile?.employment?.parent?.profile
-                            ?.profile_nationality
-                        }
-                      </dd>
-                    </div>
-                  </dl>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
-import { defineComponent, inject, onMounted } from "vue";
+import { defineComponent, inject } from "vue";
 import type { UserResource } from "@/models/User";
 import { UserInjectionKey } from "@/layouts/Dashboard/Default";
+import { formatUtcDate } from "@/utilities/date-display";
 export default defineComponent({
   name: "MyDataEmploymentDetailIndex",
   setup() {
@@ -60,10 +61,9 @@ export default defineComponent({
                           Hiring Date
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {new Date(
-                            this.user?.profile?.employment
-                              ?.employment_hiring_date as string
-                          ).toUTCString()}
+                          {formatUtcDate(
+                            this.user?.profile?.employment?.employment_hiring_date
+                          )}
                         </dd>
                       </div>
                       <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -71,12 +71,9 @@ export default defineComponent({
                           End Date
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {this.user?.profile?.employment?.employment_end_date
-                            ? new Date(
-                                this.user?.profile?.employment
-                                  ?.employment_end_date as string
-                              ).toUTCString()
-                            : "-"}
+                          {formatUtcDate(
+                            this.user?.profile?.employment?.employment_end_date
+                          )}
                         </dd>
                       </div>
                       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -177,6 +174,42 @@ export default defineComponent({
                           {
                             this.user?.profile?.employment?.plant_area
                               ?.plant_area_name
+                          }
+                        </dd>
+                      </div>
+                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Organization
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {
+                            // @ts-ignore current backend emits organization on employment
+                            this.user?.profile?.employment?.organization
+                              ?.organization_name ?? "-"
+                          }
+                        </dd>
+                      </div>
+                      <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Department
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {
+                            // @ts-ignore current backend emits department on employment
+                            this.user?.profile?.employment?.department
+                              ?.department_name ?? "-"
+                          }
+                        </dd>
+                      </div>
+                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-green-500">
+                          Organization Function
+                        </dt>
+                        <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
+                          {
+                            // @ts-ignore current backend emits organization_function on employment
+                            this.user?.profile?.employment?.organization_function
+                              ?.organization_function_name ?? "-"
                           }
                         </dd>
                       </div>

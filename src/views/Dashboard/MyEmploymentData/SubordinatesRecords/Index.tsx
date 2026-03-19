@@ -1,4 +1,4 @@
-import { defineComponent, inject, onMounted } from "vue";
+import { defineComponent, inject } from "vue";
 import type { UserResource } from "@/models/User";
 import { UserInjectionKey } from "@/layouts/Dashboard/Default";
 import { RouterLink } from "vue-router";

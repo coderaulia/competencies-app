@@ -1,7 +1,7 @@
 import type { CompetencyResource } from "./Competency";
 
 export declare type TrainingResource = {
-  // id: 4,
+  id?: number | null;
   training_job_competency_function: string | null;
   training_job_course_function: string | null;
   training_title: string | null;

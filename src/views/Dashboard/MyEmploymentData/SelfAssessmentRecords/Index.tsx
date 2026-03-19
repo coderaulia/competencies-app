@@ -1,17 +1,21 @@
-import { defineComponent, inject, onMounted } from "vue";
-import { NTag, NTable, NAlert } from "naive-ui";
-import type { UserResource } from "@/models/User";
+import AssessmentHistorySection from "@/components/Assessment/AssessmentHistorySection";
 import { UserInjectionKey } from "@/layouts/Dashboard/Default";
-import type { TrainingResource } from "@/models/Training";
+import type { UserResource } from "@/models/User";
+import { NEmpty } from "naive-ui";
+import { defineComponent, inject } from "vue";
+
 export default defineComponent({
-  name: "MyDataSelfassesssment_recordsIndex",
+  name: "MyDataSelfassesssmentRecordsIndex",
   setup() {
-    const user = inject<UserResource>(UserInjectionKey);
+    const user = inject<UserResource | null>(UserInjectionKey, null);
+
     return {
       user,
     };
   },
   render() {
+    const employment = this.user?.profile?.employment ?? null;
+
     return (
       <div>
         <div class={["flex flex-col"]}>
@@ -21,10 +25,10 @@ export default defineComponent({
                 <div class="overflow-hidden bg-white shadow sm:rounded-lg">
                   <div class="px-4 py-5 sm:px-6">
                     <h3 class="text-lg font-medium leading-6 text-green-900">
-                      Employee Assesment Records
+                      My Assessment Records
                     </h3>
                     <p class="mt-1 max-w-2xl text-sm text-green-500">
-                      Assessment Score and Reporting detail
+                      Assessment history, IDP notes, and recommended trainings
                     </p>
                   </div>
                   <div class="border-t border-green-200">
@@ -34,7 +38,7 @@ export default defineComponent({
                           Username
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {this.user?.name}
+                          {this.user?.name ?? "-"}
                         </dd>
                       </div>
                       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -42,7 +46,7 @@ export default defineComponent({
                           Email Address
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {this.user?.email}
+                          {this.user?.email ?? "-"}
                         </dd>
                       </div>
                       <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -50,7 +54,7 @@ export default defineComponent({
                           Fullname
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {this.user?.profile?.profile_fullname}
+                          {this.user?.profile?.profile_fullname ?? "-"}
                         </dd>
                       </div>
                       <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -58,10 +62,7 @@ export default defineComponent({
                           Report to Email Address
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {
-                            this.user?.profile?.employment?.parent?.profile
-                              ?.user?.email
-                          }
+                          {employment?.parent?.profile?.user?.email ?? "-"}
                         </dd>
                       </div>
                       <div class="bg-green-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -69,10 +70,7 @@ export default defineComponent({
                           Report to Fullname
                         </dt>
                         <dd class="mt-1 text-sm text-green-900 sm:col-span-2 sm:mt-0">
-                          {
-                            this.user?.profile?.employment?.parent?.profile
-                              ?.profile_fullname
-                          }
+                          {employment?.parent?.profile?.profile_fullname ?? "-"}
                         </dd>
                       </div>
                     </dl>
@@ -82,118 +80,17 @@ export default defineComponent({
             </div>
           </div>
         </div>
+
         <div class={["flex flex-col"]}>
           <div class={["md:grid md:grid-cols-3 md:gap-6 p-2"]}>
             <div class={["md:col-span-12"]}>
-              {this.user?.profile?.employment?.assessment_records?.length !==
-              0 ? (
-                <NTable striped>
-                  <thead>
-                    <tr>
-                      <th>Competency Name</th>
-                      <th>Min. Requirement Score</th>
-                      <th>Assessment Score</th>
-                      <th>Score Gap</th>
-                      <th>IDP Exposure & Experience</th>
-                      <th>IDP Status</th>
-                      <th>Selected Training</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {this.user?.profile?.employment?.position?.competency_by_level?.map(
-                      (element, index) => (
-                        <tr key={element.competency_name as string}>
-                          <td>{element.competency_name}</td>
-                          <td>
-                            {element.minimum_score_by_level?.minimum_score}
-                          </td>
-                          <td>
-                            {/* @ts-ignore */}
-                            {this.user?.profile?.employment?.assessment_records[
-                              index
-                            ]?.assessment_score ?? (
-                              <NTag class={[""]} type={"warning"}>
-                                Data Belum Tersedia / Belum di isi
-                              </NTag>
-                            )}
-                            {/* <NInputNumber min={0} max={formRecords[index].requiredScore} v-model:value={formRecords[index].value} /> */}
-                          </td>
-                          <td>
-                            {/* @ts-ignore */}
-                            {this.user?.profile?.employment?.assessment_records[
-                              index
-                            ]?.gap_score ?? (
-                              <NTag class={[""]} type={"warning"}>
-                                Data Belum Tersedia / Belum di isi
-                              </NTag>
-                            )}
-                          </td>
-                          <td>
-                            {/* @ts-ignore */}
-                            {this.user?.profile?.employment?.assessment_records[
-                              index
-                            ] !== undefined ? (
-                              this.user?.profile?.employment
-                                ?.assessment_records[index]
-                                .idp_exposure_experience
-                            ) : (
-                              <NTag class={[""]} type={"warning"}>
-                                Data Belum Tersedia / Belum di isi
-                              </NTag>
-                            )}
-                          </td>
-                          <td>
-                            {/* @ts-ignore */}
-                            {this.user?.profile?.employment?.assessment_records[
-                              index
-                            ] !== undefined ? (
-                              this.user?.profile?.employment
-                                ?.assessment_records[index].idp_status
-                            ) : (
-                              <NTag class={[""]} type={"warning"}>
-                                Data Belum Tersedia / Belum di isi
-                              </NTag>
-                            )}
-                          </td>
-                          <td>
-                            {/* @ts-ignore */}
-                            {(this.user?.profile?.employment
-                              ?.assessment_records[index] !==
-                              undefined) &
-                            (this.user?.profile?.employment?.assessment_records[
-                              index
-                            ].training_id !==
-                              null) ? (
-                              this.user?.profile?.employment?.position?.competency_by_level[
-                                index
-                              ]?.trainings.filter((e: TrainingResource) => {
-                                // @ts-ignore
-                                return (
-                                  e.id ===
-                                  this.user?.profile?.employment
-                                    ?.assessment_records[index].training_id
-                                );
-                              })[0].training_title
-                            ) : (
-                              <NTag class={[""]} type={"warning"}>
-                                Data Belum Tersedia / Belum di isi
-                              </NTag>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </NTable>
+              {employment ? (
+                <AssessmentHistorySection employment={employment} />
               ) : (
-                <NAlert title="Warning" type={"warning"} showIcon>
-                  <div class={["flex flex-row items-center justify-between"]}>
-                    <div class={["w-1/2"]}>
-                      Data assessment saat ini belum tersedia ! silahkan hubungi
-                      supervisor anda untuk info lebih lanjut !
-                    </div>
-                  </div>
-                </NAlert>
+                <NEmpty
+                  description="Employment detail is not available."
+                  class={["mt-4"]}
+                />
               )}
             </div>
           </div>

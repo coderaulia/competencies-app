@@ -2,6 +2,7 @@ import type { AssessmentScheduleResource } from "./AssessmentSchedule";
 import type { TrainingResource } from "./Training";
 
 export type AssessmentRecordResource = {
+  id?: number | null;
   assessment_score: number | null;
   competency_id: number | null;
   competency_level_id: number | null;
@@ -15,6 +16,7 @@ export type AssessmentRecordResource = {
   idp_status: string | null;
   training: TrainingResource;
   assessment_schedule_id?: number | null;
+  assessment_schedule?: AssessmentScheduleResource | null;
   assessmentSchedule?: AssessmentScheduleResource | null;
 };
 export type AssessmentRecordCollections = AssessmentRecordResource[] | [];

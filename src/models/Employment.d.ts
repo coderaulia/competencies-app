@@ -3,6 +3,7 @@ import type { AssessmentScheduleResource } from "./AssessmentSchedule";
 import type { CertificationResource } from "./Certification";
 import type { CompanyResource } from "./Company";
 import type { DirectoratResource } from "./Directorat";
+import type { PeriodicalGeneralAssessmentResource } from "./PeriodicalGeneralAssessment";
 import type { PersonelAreaResource } from "./PersonelArea";
 import type { PersonelSubAreaResource } from "./PersonelSubArea";
 import type { PlantAreaResource } from "./PlantArea";
@@ -10,6 +11,7 @@ import type { PositionResource } from "./Position";
 import type { ProfileResource } from "./Profile";
 
 export declare type EmploymentResource = {
+  id?: number | null;
   employment_hiring_date: string | null;
   employment_end_date: string | null;
   employment_group_type_name: string | null;
@@ -25,6 +27,9 @@ export declare type EmploymentResource = {
   personel_area_id: number | null;
   personel_sub_area_id: number | null;
   plant_area_id: number | null;
+  organization_id?: number | null;
+  department_id?: number | null;
+  organization_function_id?: number | null;
   position: PositionResource | null;
   profile: ProfileResource | null;
   company: CompanyResource | null;
@@ -38,5 +43,7 @@ export declare type EmploymentResource = {
   assessment_records?: AssessmentRecordResource[] | [];
   appliedAssessmentLogs?: AssessmentScheduleResource[] | [];
   certifications?: CertificationResource[] | [];
+  periodicalGeneralAssessments?: PeriodicalGeneralAssessmentResource[] | [];
+  periodical_general_assessments?: PeriodicalGeneralAssessmentResource[] | [];
 };
 export declare type EmploymentCollections = EmploymentResource[];
