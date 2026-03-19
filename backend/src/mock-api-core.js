@@ -1245,10 +1245,9 @@ function publicationStorageSummary(store, storage, options = {}) {
   const fileName = storage.document_hash_name
     ? `${storage.document_hash_name}.${storage.document_extension || "pdf"}`
     : null;
-  const documentUrl =
-    storage.document_path && fileName
-      ? `${storage.document_path}/${fileName}`
-      : null;
+  const documentUrl = storage.id
+    ? `/api/publication_storages/${storage.id}/document`
+    : null;
   const documentType =
     storage.document_type ||
     (storage.document_extension === "pdf" ? "application/pdf" : null);

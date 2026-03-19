@@ -4,11 +4,12 @@ import type {
   AssessmentRecordCollections,
   AssessmentRecordResource,
 } from "@/models/AssessmentRecord";
-import type { AssessmentScheduleResource } from "@/models/AssessmentSchedule";
-import type { CompetencyResource } from "@/models/Competency";
+import type {
+  AssessmentScheduleCollections,
+  AssessmentScheduleResource,
+} from "@/models/AssessmentSchedule";
 import type { EmploymentResource } from "@/models/Employment";
 import type { TrainingResource } from "@/models/Training";
-import { XboxConsole20Regular } from "@vicons/fluent";
 import {
   NInput,
   NInputNumber,
@@ -16,17 +17,8 @@ import {
   NTable,
   NAlert,
   NSelect,
-  NForm,
-  NFormItem,
-  NH3,
   NDivider,
-  type SelectOption,
-  NTime,
 } from "naive-ui";
-import type {
-  SelectBaseOption,
-  SelectMixedOption,
-} from "naive-ui/es/select/src/interface";
 import {
   defineComponent,
   onMounted,
@@ -123,7 +115,6 @@ export default defineComponent({
       trainings: TrainingResource[],
       qualifiedLevelKey: number
     ): (TrainingResource | never)[] => {
-      // console.log(qualifiedLevelKey)
       return trainings.filter((e, index) => {
         if (qualifiedLevelKey <= 2) {
           return e.training_competency_level_stack_key === 1;
@@ -131,35 +122,52 @@ export default defineComponent({
         if (qualifiedLevelKey > 2 && qualifiedLevelKey <= 4) {
           return e.training_competency_level_stack_key === 2;
         }
-        if (qualifiedLevelKey < 4) {
-          return e.training_competency_level_stack_key === 3;
-        }
+        return e.training_competency_level_stack_key === 3;
       });
     };
 
-    // @ts-ignore
-    formRecords.value = data.value.position?.competency_by_level?.map(
-      (element, index) => {
-        return {
-          // @ts-ignore
-          competencyId: element?.id,
-          key: element.competency_name,
-          level: element.minimum_score_by_level?.competency_level_id,
-          requiredScore: element.minimum_score_by_level?.minimum_score,
-          availableTrainings: element.trainings
-            ? getQualifiedTrainingsFrom(
-                element.trainings as unknown as TrainingResource[],
-                element.minimum_score_by_level
-                  ?.competency_level_id as unknown as number
-              )
-            : [], // for rendering available training options !
-          idpStatus: "",
-          value: null,
-          gapScore: 0,
-          selectedTraining: null,
-        };
+    const createFormRecordsFromEmployment = (
+      employmentResource: EmploymentResource | null | undefined
+    ) => {
+      return (
+        employmentResource?.position?.competency_by_level?.map((element) => {
+          return {
+            // @ts-ignore
+            competencyId: element?.id,
+            key: element.competency_name,
+            level: element.minimum_score_by_level?.competency_level_id,
+            requiredScore: element.minimum_score_by_level?.minimum_score,
+            availableTrainings: element.trainings
+              ? getQualifiedTrainingsFrom(
+                  element.trainings as unknown as TrainingResource[],
+                  element.minimum_score_by_level
+                    ?.competency_level_id as unknown as number
+                )
+              : [],
+            idpStatus: "",
+            value: null,
+            gapScore: 0,
+            selectedTraining: null,
+          };
+        }) ?? []
+      );
+    };
+
+    const computeGapScore = (score: number | null, requiredScore: number | null) => {
+      if (score === null || score === undefined) {
+        return 0;
       }
-    );
+
+      const numericScore = Number(score);
+      const numericRequiredScore = Number(requiredScore || 0);
+      if (!Number.isFinite(numericScore) || numericScore <= 0) {
+        return 0;
+      }
+
+      return numericScore <= numericRequiredScore
+        ? numericRequiredScore - numericScore
+        : 0;
+    };
 
     const qualifiedTrainingOptions = (
       trainings: TrainingResource[]
@@ -172,20 +180,6 @@ export default defineComponent({
         };
       });
     };
-
-    formRecords.value.forEach((element: any) => {
-      watch(
-        () => element.value,
-        (newVal, oldVal) => {
-          if (newVal != 0) {
-            if (newVal <= element.requiredScore) {
-              element.gapScore = element.requiredScore - newVal;
-            }
-          }
-          if (newVal == 0) element.gapScore = 0;
-        }
-      );
-    });
 
     const formData = reactive({
       assessmentRecord: formRecords.value,
@@ -264,6 +258,7 @@ export default defineComponent({
         };
       });
     };
+
     const setupSelectedScheduleWithID = async (id: number) => {
       const { data } = await useApiService(
         "/assessment_schedules/" + id
@@ -271,24 +266,33 @@ export default defineComponent({
       schedule.value = data.value.data as AssessmentScheduleResource;
     };
 
+    const resetPeriodicalParameters = () => {
+      formRecordPeriodical.parameters.forEach((parameter) => {
+        parameter.value = null;
+        parameter.status = null;
+      });
+    };
+
     const resetFormRecords = () => {
-      formRecords.value.forEach((e, index) => {
-        // @ts-ignore
-        (e.idpStatus = ""),
-          // @ts-ignore
-          (e.value = null),
-          // @ts-ignore
-          (e.gapScore = 0),
-          // @ts-ignore
-          (e.selectedTraining = null);
+      formRecords.value.forEach((record: any) => {
+        record.idpStatus = "";
+        record.value = null;
+        record.gapScore = 0;
+        record.selectedTraining = null;
       });
 
-      formRecordPeriodical.parameters.forEach((e, index) => {
-        // @ts-ignore
-        e[index].value = null;
-        // @ts-ignore
-        e[index].status = null;
-      });
+      resetPeriodicalParameters();
+    };
+
+    const syncFormRecordsFromEmployment = (
+      employmentResource: EmploymentResource | null | undefined
+    ) => {
+      formRecords.value = createFormRecordsFromEmployment(employmentResource) as [];
+      formData.assessmentRecord = formRecords.value;
+      // @ts-ignore
+      formData.employmentId = employmentResource?.id ?? null;
+      // @ts-ignore
+      formData.positionId = employmentResource?.position?.id ?? null;
     };
 
     onMounted(() => {
@@ -296,48 +300,81 @@ export default defineComponent({
     });
 
     watch(
+      () => data.value,
+      (nextEmployment) => {
+        syncFormRecordsFromEmployment(nextEmployment);
+
+        if (formRecordPeriodical.assessmentSchedule === null) {
+          resetFormRecords();
+        }
+      },
+      { immediate: true }
+    );
+
+    watch(
       () => formRecordPeriodical.assessmentSchedule,
       (n, o) => {
         if (n === null) {
           schedule.value = null;
+          resetFormRecords();
           return;
         }
         setupSelectedScheduleWithID(n);
-        // fill target schedule to update / create / assign new assessment to selected schedule  !
-        // force fill attributes when in case update resource,
-        formRecords.value.forEach((e, index) => {
-          const assessments = (
-            data.value.assessmentRecords as AssessmentRecordResource[]
-          ).filter((el) => el?.assessment_schedule_id === n);
-          // @ts-ignore
-          e.value = assessments[index].assessment_score
-            ? assessments[index].assessment_score
-            : null;
-          // @ts-ignore
-          e.gapScore = assessments[index].gap_score
-            ? assessments[index].gap_score
-            : 0;
-          // @ts-ignore
-          e.idpStatus = assessments[index].idp_status
-            ? assessments[index].idp_status
-            : "";
-          // @ts-ignore
-          e.selectedTraining = assessments[index].training_id
-            ? assessments[index].training_id
-            : null;
-          // @ts-ignore
+
+        const selectedAssessments = (
+          (
+            data.value?.assessmentRecords ??
+            data.value?.assessment_records ??
+            []
+          ) as AssessmentRecordResource[]
+        ).filter((assessment) => assessment?.assessment_schedule_id === n);
+
+        const assessmentsByCompetencyId = new Map(
+          selectedAssessments.map((assessment) => [
+            Number(assessment.competency_id),
+            assessment,
+          ])
+        );
+
+        formRecords.value.forEach((record: any) => {
+          const existingAssessment = assessmentsByCompetencyId.get(
+            Number(record.competencyId)
+          );
+
+          record.value = existingAssessment?.assessment_score ?? null;
+          record.gapScore =
+            existingAssessment?.gap_score ??
+            computeGapScore(
+              existingAssessment?.assessment_score ?? null,
+              record.requiredScore
+            );
+          record.idpStatus = existingAssessment?.idp_status ?? "";
+          record.selectedTraining = existingAssessment?.training_id ?? null;
         });
-        // @ts-ignore
-        (data.value.periodicalGeneralAssessments as [])
-          .filter(
-            (periodicalData) => periodicalData.assessment_schedule_id === n
-          )
-          .forEach((e, index) => {
-            // @ts-ignore
-            formRecordPeriodical.parameters[index].value = e.parameters_value;
-            // @ts-ignore
-            formRecordPeriodical.parameters[index].status = e.status;
-          });
+
+        const selectedPeriodicalAssessments =
+          (
+            data.value?.periodicalGeneralAssessments ??
+            data.value?.periodical_general_assessments ??
+            []
+          ) as any[];
+
+        const periodicalByName = new Map(
+          selectedPeriodicalAssessments
+            .filter((periodicalData) => periodicalData.assessment_schedule_id === n)
+            .map((periodicalData) => [
+              String(periodicalData.parameters_name || "").toLowerCase(),
+              periodicalData,
+            ])
+        );
+
+        formRecordPeriodical.parameters.forEach((parameter) => {
+          const existingParameter = periodicalByName.get(
+            String(parameter.name || "").toLowerCase()
+          );
+          parameter.value = existingParameter?.parameters_value ?? null;
+          parameter.status = existingParameter?.status ?? null;
+        });
       },
       { immediate: false }
     );
@@ -359,6 +396,7 @@ export default defineComponent({
       schedule,
       scheduleOptions,
       resetFormRecords,
+      computeGapScore,
     };
   },
   render() {
@@ -459,8 +497,16 @@ export default defineComponent({
                             min={0}
                             // @ts-ignore
                             max={formRecords[index].requiredScore}
-                            // @ts-ignore
-                            v-model:value={formRecords[index].value}
+                            value={formRecords[index].value}
+                            onUpdate:value={(value) => {
+                              // @ts-ignore
+                              formRecords[index].value = value;
+                              // @ts-ignore
+                              formRecords[index].gapScore = this.computeGapScore(
+                                value as number | null,
+                                formRecords[index].requiredScore
+                              );
+                            }}
                           />
                         </td>
                         <td class={["w-64"]}>

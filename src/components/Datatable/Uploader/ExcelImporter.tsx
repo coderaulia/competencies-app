@@ -15,6 +15,25 @@ import {
 } from "@vicons/ionicons5";
 import { useAuthStore } from "@/stores/auth";
 import useUploadManager, { type UploadConfig } from "./useUploadManager";
+
+const IMPORT_TEMPLATES: Record<
+  string,
+  { href: string; title: string; description: string }
+> = {
+  employments: {
+    href: "/import-templates/employments-template.csv",
+    title: "Employment CSV Template",
+    description:
+      "Download, edit in Excel if needed, then upload it back as CSV.",
+  },
+  "parent-employments": {
+    href: "/import-templates/parent-employments-template.csv",
+    title: "Reporting Line CSV Template",
+    description:
+      "Use this to sync employment-parent relationships by WSR code.",
+  },
+};
+
 export default defineComponent({
   name: "ExcelImporter",
   props: {
@@ -69,6 +88,10 @@ export default defineComponent({
         config.action.path +
         (config.action.resource || "")
     );
+    const template = computed(() => {
+      const resourceKey = String(config.action.resource || "").trim();
+      return IMPORT_TEMPLATES[resourceKey] || null;
+    });
 
     return {
       uploadRefs,
@@ -76,18 +99,34 @@ export default defineComponent({
       uploadHandler,
       label,
       isDisabled_,
+      template,
     };
   },
   render() {
-    const { uploadRefs, state, uploadHandler } = this;
+    const { uploadRefs, state, uploadHandler, template } = this;
     const token = useAuthStore().access_token;
 
     return (
       <div class={["w-full"]}>
-        <div class={["mt-2"]}>
+        <div class={["mt-2 flex flex-col gap-2"]}>
           <span class={["font-semibold text-gray-500 text-md"]}>
-            {this.label}
+            {this.label || "Import data"}
           </span>
+          {template ? (
+            <div class={["rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"]}>
+              <div class={["font-semibold"]}>{template.title}</div>
+              <div class={["mt-1 text-emerald-700"]}>{template.description}</div>
+              <a
+                href={template.href}
+                download
+                class={["mt-3 inline-flex rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"]}
+              >
+                Download Template
+              </a>
+            </div>
+          ) : (
+            ""
+          )}
         </div>
 
         <div class={["mt-8 flex flex-row w-full"]}>
@@ -96,6 +135,7 @@ export default defineComponent({
             action={uploadHandler}
             directoryDnd={true}
             defaultUpload={false}
+            accept=".csv,text/csv"
             onBeforeUpload={() => {}}
             onError={({ file, event }) => {}}
             onFinish={({ file, event }) => {}}
@@ -113,11 +153,11 @@ export default defineComponent({
                 </NIcon>
               </div>
               <NText class={["text-xl"]}>
-                Click or drag a file to this area to importing data
+                Click or drag a CSV file to this area to import data
               </NText>
               <NP>
-                Please upload using supported document (XLSX Format), instead it
-                will be ignored.
+                Use the provided CSV template. You can edit it in Excel, then
+                save and upload it as CSV.
               </NP>
             </NUploadDragger>
           </NUpload>

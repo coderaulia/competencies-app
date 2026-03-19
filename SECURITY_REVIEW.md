@@ -15,6 +15,7 @@ This repo is still a local-development app, but the most obvious security gaps w
 - Demo credentials are no longer shown in the login UI unless `VITE_SHOW_DEMO_CREDENTIALS="true"`.
 - Debug-heavy frontend console output was removed from the active auth, employment, uploader, publication, and analytics paths.
 - The ECharts wrapper no longer relies on `new Function`, which improves CSP compatibility.
+- Publication documents now stream through an authenticated `/api/publication_storages/:id/document` route instead of a public mock file URL.
 
 ## Current status by category
 
@@ -31,6 +32,6 @@ This repo is still a local-development app, but the most obvious security gaps w
 
 - Reset tokens are still returned by the reset-request API in local mode because there is no mail delivery flow yet.
 - The local backend still uses a JSON file instead of a database with stronger access controls, auditing, and transactional guarantees.
-- Mock publication documents are still directly fetchable by URL; a production backend should use signed/private document access.
+- Publication documents are now auth-gated in local mode, but a production backend should still use stronger signed/private document access and finer-grained authorization.
 - Rate limiting is memory-only, so it resets on server restart and does not protect across multiple backend instances.
 - Client-side bearer tokens remain readable by injected scripts within the same browser session, so strong CSP and stricter input/output handling are still important.

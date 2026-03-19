@@ -16,8 +16,8 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 - Dashboard statistics and CSV exports
 - Employee and department analytics
 - Publication buckets, uploads, and approval
-- Mock PDF document delivery for publication detail screens
-- Import endpoints for the Excel importer UI with dummy employment creation and hierarchy sync
+- Authenticated PDF document delivery for publication detail screens
+- Import endpoints for the importer UI with CSV parsing for employment creation and hierarchy sync
 - Persistent JSON database stored at `backend/data/app-db.json`
 - Basic rate limiting, CORS restriction, and request-size limits
 
@@ -29,10 +29,10 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 - `POST /api/auth/logout`
 - `GET /api/auth/user`
 - `GET /api/gravatar/:id`
-- `GET /mock-publications/:fileName`
 - `GET /api/employees`
 - `POST /api/employees/search`
 - `GET /api/employees/:id`
+- `GET /api/publication_storages/:id/document`
 - `GET /api/:resource`
 - `POST /api/:resource/search`
 - `GET /api/:resource/:id`
@@ -42,14 +42,18 @@ See [SCHEMA_CONTEXT.md](./SCHEMA_CONTEXT.md) for notes derived from the original
 
 ## Import workflows
 
-The importer endpoints now perform local demo mutations instead of pure no-op acknowledgements:
+The importer endpoints now perform local CSV-backed mutations instead of pure no-op acknowledgements:
 
 - `POST /api/utilities/importers/employments`
-  - creates a small batch of dummy `user + profile + employment` records
-  - leaves imported employments without a parent so the hierarchy sync flow has work to do
+  - accepts CSV uploads based on the frontend template
+  - upserts linked `user + profile + employment` records
+  - leaves parent relationships blank unless the CSV explicitly provides them
 - `POST /api/utilities/importers/parent-employments`
-  - attaches reporting lines to employments that do not yet have a parent
+  - accepts CSV uploads with `employment_wsr,parent_employment_wsr`
+  - updates reporting lines by WSR code
   - persists the updated hierarchy to the local JSON database
+
+Local importer mode currently supports CSV only. The frontend template files are designed to be edited in Excel and then saved back as `.csv` before upload.
 
 ## Demo credentials
 

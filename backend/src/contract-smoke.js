@@ -37,9 +37,12 @@ async function main() {
     });
 
     const contentType = response.headers.get("content-type") || "";
-    const payload = contentType.includes("application/json")
-      ? await response.json()
-      : await response.text();
+    const payload =
+      options.expectBinary || contentType.includes("application/pdf")
+        ? Buffer.from(await response.arrayBuffer())
+        : contentType.includes("application/json")
+          ? await response.json()
+          : await response.text();
 
     return {
       response,
@@ -91,6 +94,13 @@ async function main() {
     assert.equal(login.response.status, 200, "login should succeed");
     const token = login.payload.oAuth.access_token;
     assert.ok(token, "login should return an access token");
+    const authUser = await request("/api/auth/user", { token });
+    assert.equal(authUser.response.status, 200, "auth user should succeed");
+    assert.ok(authUser.payload.profile, "auth user should expose profile data");
+    assert.ok(
+      authUser.payload.profile?.employment,
+      "auth user should expose linked employment data"
+    );
     assert.ok(fs.existsSync(DATABASE_FILE), "persistent database file should exist");
     const loginPersistedState = JSON.parse(fs.readFileSync(DATABASE_FILE, "utf8"));
     assert.equal(
@@ -144,6 +154,68 @@ async function main() {
     for (const resource of seededResources) {
       await assertSeededResource(resource, token);
     }
+
+    const employmentSelectOptions = await request(
+      "/api/utilities/select_options/employments",
+      { token }
+    );
+    assert.equal(
+      employmentSelectOptions.response.status,
+      200,
+      "employment select options should succeed"
+    );
+    assert.ok(
+      employmentSelectOptions.payload.data[0]?.profile?.profile_fullname,
+      "employment select options should expose nested profile labels"
+    );
+
+    const assessmentScheduleOptions = await request(
+      "/api/utilities/select_options/assessment_schedules",
+      { token }
+    );
+    assert.equal(
+      assessmentScheduleOptions.response.status,
+      200,
+      "assessment schedule select options should succeed"
+    );
+    assert.ok(
+      assessmentScheduleOptions.payload.data.some(
+        (schedule) => schedule.assessment_schedule_is_active === true
+      ),
+      "assessment schedule options should expose active schedules"
+    );
+
+    const publicationBucketLists = await request(
+      "/api/utilities/uploads/libraries/publication-bucket-lists",
+      { token }
+    );
+    assert.equal(
+      publicationBucketLists.response.status,
+      200,
+      "publication bucket list should succeed"
+    );
+    assert.ok(
+      publicationBucketLists.payload.result.publicBucket,
+      "publication bucket list should expose the public bucket"
+    );
+    assert.ok(
+      Array.isArray(publicationBucketLists.payload.result.myBuckets),
+      "publication bucket list should expose private buckets"
+    );
+
+    const publicationBucketDetail = await request(
+      `/api/utilities/uploads/libraries/publication-bucket-lists/${publicationBucketLists.payload.result.publicBucket.id}`,
+      { token }
+    );
+    assert.equal(
+      publicationBucketDetail.response.status,
+      200,
+      "publication bucket detail should succeed"
+    );
+    assert.ok(
+      Array.isArray(publicationBucketDetail.payload.result.publications),
+      "publication bucket detail should expose publication cards"
+    );
 
     const dashboardEmploymentsWithAssessments = await request(
       "/api/utilities/dashboard/superadmin/employments_has_assessments?limit=10",
@@ -801,13 +873,18 @@ async function main() {
     const stateBeforeEmploymentImport = JSON.parse(
       fs.readFileSync(DATABASE_FILE, "utf8")
     );
+    const employmentImportCsv = [
+      "profile_fullname,email,employment_wsr,position_id,organization_id,department_id,organization_function_id,company_id,directorat_id,personel_area_id,personel_sub_area_id,plant_area_id,employment_hiring_date,employment_status,employment_group_type_name,employment_group_age,employment_position_status,parent_employment_wsr,role_names",
+      "Imported Frontend Analyst,imported.frontend.analyst@example.com,IMP-FE-101,3,2,2,2,2,2,1,2,1,2026-03-01,Active,Contract,Junior,Staff,,employee",
+      "Imported Learning Officer,imported.learning.officer@example.com,IMP-LD-101,5,1,1,1,1,1,1,1,1,2026-03-05,Active,Permanent,Mid,Staff,,employee",
+    ].join("\n");
     const employmentImportForm = new FormData();
     employmentImportForm.set(
       "xlsx_doc",
-      new Blob(["dummy employment import"], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      new Blob([employmentImportCsv], {
+        type: "text/csv",
       }),
-      "employment-import.xlsx"
+      "employment-import.csv"
     );
 
     const employmentImport = await request("/api/utilities/importers/employments", {
@@ -825,7 +902,7 @@ async function main() {
     assert.equal(
       employmentImport.payload.data.imported_employments.length,
       2,
-      "employment importer should create two demo employments"
+      "employment importer should create two imported employments"
     );
     assert.ok(
       employmentImport.payload.data.imported_employments.every(
@@ -843,13 +920,45 @@ async function main() {
       "employment importer should persist new employment rows"
     );
 
+    const invalidEmploymentImportForm = new FormData();
+    invalidEmploymentImportForm.set(
+      "xlsx_doc",
+      new Blob(["profile_fullname,email\nBroken Row,broken@example.com"], {
+        type: "text/csv",
+      }),
+      "invalid-employment-import.csv"
+    );
+    const invalidEmploymentImport = await request(
+      "/api/utilities/importers/employments",
+      {
+        method: "POST",
+        token,
+        formData: invalidEmploymentImportForm,
+      }
+    );
+    assert.equal(
+      invalidEmploymentImport.response.status,
+      422,
+      "employment importer should reject missing required template columns"
+    );
+    assert.ok(
+      invalidEmploymentImport.payload.error.meta.headers[0].includes(
+        "employment_wsr"
+      )
+    );
+
+    const parentEmploymentImportCsv = [
+      "employment_wsr,parent_employment_wsr",
+      "IMP-FE-101,WSR-002",
+      "IMP-LD-101,WSR-001",
+    ].join("\n");
     const parentEmploymentImportForm = new FormData();
     parentEmploymentImportForm.set(
       "xlsx_doc",
-      new Blob(["dummy parent sync"], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      new Blob([parentEmploymentImportCsv], {
+        type: "text/csv",
       }),
-      "parent-employment-sync.xlsx"
+      "parent-employment-sync.csv"
     );
 
     const parentEmploymentImport = await request(
@@ -923,16 +1032,44 @@ async function main() {
       publicationStorageShow.payload.data.publication.id,
       createdPublication.payload.data.id
     );
-    assert.match(
-      publicationStorageShow.payload.data.document_url,
-      /^mock-publications\//
-    );
+    assert.match(publicationStorageShow.payload.data.document_url, /^\/api\//);
     assert.equal(
       publicationStorageShow.payload.data.document_type,
       "application/pdf"
     );
     assert.ok(publicationStorageShow.payload.data.document_storage_path);
     assert.ok(publicationStorageShow.payload.data.document_description);
+
+    const unauthorizedDocument = await request(
+      publicationStorageShow.payload.data.document_url
+    );
+    assert.equal(
+      unauthorizedDocument.response.status,
+      401,
+      "publication document should require authentication"
+    );
+
+    const publicationDocument = await request(
+      publicationStorageShow.payload.data.document_url,
+      {
+        token,
+        expectBinary: true,
+      }
+    );
+    assert.equal(
+      publicationDocument.response.status,
+      200,
+      "publication document should stream for authenticated users"
+    );
+    assert.equal(
+      publicationDocument.response.headers.get("content-type"),
+      "application/pdf",
+      "publication document should return a pdf content type"
+    );
+    assert.ok(
+      publicationDocument.payload.length > 0,
+      "publication document should return a non-empty payload"
+    );
 
     const duplicatePublication = await request("/api/publications", {
       method: "POST",

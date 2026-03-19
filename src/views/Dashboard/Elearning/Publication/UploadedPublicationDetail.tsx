@@ -36,10 +36,17 @@ export default defineComponent({
       const hashName =
         // @ts-ignore legacy API shape still uses document_hash_name
         storage.document_hash_name ?? storage.document_name ?? "document";
+      const secureDocumentUrl =
+        // @ts-ignore backend now emits document_url for authenticated access
+        storage.document_url ?? null;
 
       return {
         fileName: `${hashName}.${storage.document_extension}`,
-        path: `${storage.document_path}/${hashName}.${storage.document_extension}`,
+        path:
+          // @ts-ignore legacy payload can expose either document_storage_path or raw path
+          storage.document_storage_path ??
+          `${storage.document_path}/${hashName}.${storage.document_extension}`,
+        secureUrl: secureDocumentUrl,
         size: storage.document_size,
         extension: storage.document_extension,
       };
@@ -51,16 +58,23 @@ export default defineComponent({
         return "";
       }
 
+      if (attachedDocument.value?.secureUrl) {
+        const secureUrl = attachedDocument.value.secureUrl;
+        if (/^https?:\/\//i.test(secureUrl)) {
+          return secureUrl;
+        }
+
+        if (backendOrigin.value && secureUrl.startsWith("/")) {
+          return normalizeUrl(backendOrigin.value, secureUrl);
+        }
+      }
+
       if (/^https?:\/\//i.test(path)) {
         return path;
       }
 
       if (configuredStorageBasePath.value) {
         return normalizeUrl(configuredStorageBasePath.value, path);
-      }
-
-      if (path.startsWith("mock-publications/") && backendOrigin.value) {
-        return normalizeUrl(backendOrigin.value, path);
       }
 
       return "";
@@ -188,8 +202,8 @@ export default defineComponent({
           </h3>
           <p class={["mt-2 text-sm text-slate-600"]}>
             This publication could not be resolved to a readable PDF URL yet.
-            In local mode the app can use either the bundled mock document
-            endpoint or a configured object storage base path.
+            In local mode the app can use either the authenticated backend
+            document endpoint or a configured object storage base path.
           </p>
 
           <div class={["mt-5 grid gap-4 md:grid-cols-2"]}>
@@ -243,8 +257,8 @@ export default defineComponent({
             {!this.configuredStorageBasePath ? (
               <p class={["mt-3 text-sm text-slate-500"]}>
                 `VITE_AWS_S3_BUCKET_OBJECT_BASEPATH` is not configured, so the
-                component falls back to the local mock document source when
-                available.
+                component falls back to the authenticated local backend document
+                source when available.
               </p>
             ) : (
               ""

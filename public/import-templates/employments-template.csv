@@ -1,0 +1,3 @@
+profile_fullname,email,employment_wsr,position_id,organization_id,department_id,organization_function_id,company_id,directorat_id,personel_area_id,personel_sub_area_id,plant_area_id,employment_hiring_date,employment_status,employment_group_type_name,employment_group_age,employment_position_status,parent_employment_wsr,role_names
+Imported Frontend Analyst,imported.frontend.analyst@example.com,IMP-FE-101,3,2,2,2,2,2,1,2,1,2026-03-01,Active,Contract,Junior,Staff,,employee
+Imported Learning Officer,imported.learning.officer@example.com,IMP-LD-101,5,1,1,1,1,1,1,1,1,2026-03-05,Active,Permanent,Mid,Staff,,employee

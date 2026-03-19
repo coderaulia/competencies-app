@@ -164,9 +164,54 @@ function findPublicationForDocument(fileName) {
   );
 }
 
+function findEmploymentForUser(userId) {
+  const profile = store.collections.profiles.find(
+    (item) => Number(item.user_id) === Number(userId)
+  );
+
+  if (!profile) {
+    return null;
+  }
+
+  return (
+    store.collections.employments.find(
+      (item) => Number(item.profile_id) === Number(profile.id)
+    ) || null
+  );
+}
+
 function findStoredPublicationFile(fileName) {
   const filePath = extractPublicationStorage(fileName);
   return fs.existsSync(filePath) ? filePath : null;
+}
+
+function canAccessPublication(req, publication) {
+  if (!publication || !req.session) {
+    return false;
+  }
+
+  if (publication.publication_is_verified) {
+    return true;
+  }
+
+  const bucket = store.collections.buckets.find(
+    (item) => Number(item.id) === Number(publication.bucket_id)
+  );
+
+  if (bucket?.bucket_has_public_access) {
+    return true;
+  }
+
+  if ((req.session.user?.roles || []).includes("superadmin")) {
+    return true;
+  }
+
+  const employment = findEmploymentForUser(req.session.userId);
+  if (!employment) {
+    return false;
+  }
+
+  return Number(bucket?.bucket_author_employment_id) === Number(employment.id);
 }
 
 function inferBrowser(userAgent) {
@@ -429,31 +474,6 @@ app.get("/api/health", (req, res) => {
       "imports",
     ],
   });
-});
-
-app.get("/mock-publications/:fileName", (req, res) => {
-  const storedFile = findStoredPublicationFile(req.params.fileName);
-  if (storedFile) {
-    return res.sendFile(storedFile);
-  }
-
-  const publication = findPublicationForDocument(req.params.fileName);
-  const fallbackTitle = String(req.params.fileName || "mock-publication")
-    .replace(/\.pdf$/i, "")
-    .replace(/-/g, " ");
-  const buffer = createMockPdfBuffer({
-    title: publication?.publication_title || fallbackTitle,
-    subtitle:
-      publication?.publication_description || "Generated in mock mode.",
-    detail: "This file is served dynamically so publication detail works locally.",
-  });
-
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader(
-    "Content-Disposition",
-    `inline; filename="${req.params.fileName || "mock-publication.pdf"}"`
-  );
-  return res.send(buffer);
 });
 
 app.post("/api/auth/login", authLoginLimiter, (req, res) => {
@@ -907,6 +927,8 @@ app.post("/api/utilities/importers/:resource", async (req, res) => {
 
     const payload = importResource(store, req.params.resource, {
       fileName,
+      fileBuffer: primaryFile.buffer,
+      contentType: primaryFile.contentType,
     });
     persistStore();
     return res.json(payload);
@@ -937,6 +959,13 @@ app.post("/api/:resource/search", (req, res, next) => {
 });
 
 app.get("/api/:resource/:id", (req, res, next) => {
+  if (
+    req.params.resource === "publication_storages" &&
+    req.params.id === "document"
+  ) {
+    return next();
+  }
+
   if (!isGenericResource(req.params.resource)) {
     return next();
   }
@@ -948,6 +977,55 @@ app.get("/api/:resource/:id", (req, res, next) => {
 
   return res.json({
     data: payload,
+  });
+});
+
+app.get("/api/publication_storages/:id/document", (req, res) => {
+  return runSafe(res, () => {
+    const storage = store.collections.publication_storages.find(
+      (item) => Number(item.id) === Number(req.params.id)
+    );
+
+    if (!storage) {
+      return respondNotFound(res, "Publication document was not found");
+    }
+
+    const publication = store.collections.publications.find(
+      (item) => Number(item.id) === Number(storage.publication_id)
+    );
+
+    if (!publication) {
+      return respondNotFound(res, "Publication was not found");
+    }
+
+    if (!canAccessPublication(req, publication)) {
+      return res.status(403).json({
+        error: {
+          message: "You are not allowed to access this document.",
+        },
+      });
+    }
+
+    const fileName = `${storage.document_hash_name}.${storage.document_extension || "pdf"}`;
+    const storedFile = findStoredPublicationFile(fileName);
+    if (storedFile) {
+      return res.sendFile(storedFile);
+    }
+
+    const fallbackTitle = String(fileName || "mock-publication")
+      .replace(/\.pdf$/i, "")
+      .replace(/-/g, " ");
+    const buffer = createMockPdfBuffer({
+      title: publication.publication_title || fallbackTitle,
+      subtitle:
+        publication.publication_description || "Generated in local mode.",
+      detail: "This file is served through the authenticated publication API.",
+    });
+
+    res.setHeader("Content-Type", storage.document_type || "application/pdf");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+    return res.send(buffer);
   });
 });
 
